@@ -20,9 +20,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.WindowSizeMsg:
-		m.page.Width = msg.Width
-		m.page.Height = msg.Height
-
 		m.width = msg.Width
 		m.height = msg.Height
 		m.ready = true
@@ -43,7 +40,7 @@ func (m model) View() tea.View {
 		return tea.NewView("Loading...")
 	}
 
-	v := tea.NewView(m.page.Render(m.page.Width, m.page.Height))
+	v := tea.NewView(m.page.Render(m.width, m.height))
 	v.AltScreen = true
 	return v
 }
@@ -83,8 +80,8 @@ func initialModel() model {
 		Height:  3,
 		Justify: flexgo.JustifySpaceBetween,
 		Children: []*flexgo.Node{
-			{Flex: 7, View: box("STATUS INFO")},
-			{Flex: 2, View: box("1.0.0-alpha")},
+			{Width: 56, View: box("STATUS INFO")},
+			{Width: 16, View: box("1.0.0-alpha")},
 		},
 	}
 
@@ -124,6 +121,11 @@ func (m model) Init() tea.Cmd {
 }
 
 func main() {
+	if os.Getenv("FLEXGO_GOLDEN") == "1" {
+		fmt.Print(initialModel().page.Render(80, 24))
+		return
+	}
+
 	if _, err := tea.NewProgram(initialModel()).Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)

@@ -24,6 +24,17 @@ profile.cov
 go.work
 go.work.sum
 
+# Compiled example binaries (from `go build ./example/<name>`)
+/align
+/basic
+/centered
+/centeredLayout
+/dynamic
+/hautocenter
+/justify
+/spacing
+/vautocenter
+
 # env file
 .env
 

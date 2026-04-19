@@ -11,6 +11,9 @@ func distribute(total int, children []*Node, isRow bool, gap int) []int {
 
 	sizes := make([]int, n)
 
+	flexIndices := make([]int, 0, n)
+	flexValues := make([]int, n)
+
 	remaining := available
 	totalFlex := 0
 
@@ -26,19 +29,23 @@ func distribute(total int, children []*Node, isRow bool, gap int) []int {
 			sizes[i] = fixed
 			remaining -= fixed
 		} else {
-			if c.Flex == 0 {
-				c.Flex = 1
+			flex := c.Flex
+			if flex == 0 {
+				flex = 1
 			}
-			totalFlex += c.Flex
+			flexValues[i] = flex
+			flexIndices = append(flexIndices, i)
+			totalFlex += flex
 		}
 	}
 
-	for i, c := range children {
+	for i := range children {
 		if sizes[i] > 0 {
 			continue
 		}
 
-		size := (remaining * c.Flex) / totalFlex
+		flex := flexValues[i]
+		size := (remaining * flex) / totalFlex
 		if size < 0 {
 			size = 0
 		}
@@ -51,9 +58,15 @@ func distribute(total int, children []*Node, isRow bool, gap int) []int {
 	}
 
 	rem := available - used
-	for i := 0; rem > 0; i++ {
-		sizes[i%len(sizes)]++
-		rem--
+
+	for rem > 0 && len(flexIndices) > 0 {
+		for _, idx := range flexIndices {
+			if rem <= 0 {
+				break
+			}
+			sizes[idx]++
+			rem--
+		}
 	}
 
 	return sizes

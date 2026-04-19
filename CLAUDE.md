@@ -11,7 +11,7 @@ Module path: `github.com/spik3r/flexgo`
 ## Commands
 
 ```bash
-# Run tests (none exist yet)
+# Run tests
 go test ./...
 
 # Build the module
@@ -22,6 +22,15 @@ cd example/basic && go run main.go
 
 # Run the interactive BubbleTea example
 cd example/dynamic && go run main.go
+
+# Run the vertical auto-margin centering example
+cd example/vautocenter && go run main.go
+
+# Run the horizontal auto-margin centering example
+cd example/hautocenter && go run main.go
+
+# Run the full center (horizontal + vertical) example
+cd example/centeredLayout && go run main.go
 ```
 
 ## Architecture
@@ -56,13 +65,25 @@ Render(w, h)
 - `Width`, `Height` — fixed dimensions (used when `Flex == 0`)
 - `MinWidth`, `MaxWidth`, `MinHeight`, `MaxHeight` — constraints applied after distribution
 - `Gap` — space between children
-- `Padding`, `Margin` — lipgloss `Style`-based spacing
+- `Padding`, `Margin` — uniform spacing shorthands
+- `Paddings`, `Margins` — per-side spacing (`Spacing{Top, Right, Bottom, Left}`)
 - `MarginTopAuto`, `MarginBottomAuto`, `MarginLeftAuto`, `MarginRightAuto` — auto-margin support
 - `Justify` — main-axis: `JustifyStart`, `JustifyCenter`, `JustifyEnd`, `JustifySpaceBetween`
 - `Align` — cross-axis: `AlignStart`, `AlignCenter`, `AlignEnd`
+- `AlignSelf` — per-child override of parent `Align`
+- `Background` — typed color (`color.Color`, typically `lipgloss.Color("...")`)
+- `Border`, `BorderForeground`, `BorderBackground` — first-class border controls
 - `View func(w, h int) string` — set on leaf nodes to render content
 - `Children []*Node` — set on container nodes
-- `Debug bool` — draws a lipgloss border around the node for layout debugging
+- `Debug`, `Name` — debug border and label for introspection
+
+### Important rules
+
+1. **Flex vs Width/Height**: When both `Flex` and `Width`/`Height` are set, fixed dimensions take precedence.
+2. **Justify has no effect** unless children leave remaining space in the container.
+3. **Gap composes with all Justify modes** (`JustifyStart`, `JustifyCenter`, `JustifyEnd`, `JustifySpaceBetween`).
+4. **Auto-margins need spare space**: auto-margin centering only happens when the allocated size on that axis is larger than the node's rendered size.
+5. **Root `Margin` shows the terminal default background**: the outermost node has no parent, so its margin area renders as terminal default — never a deliberate colour. For a coloured backdrop around a margined root, wrap it in a container node that sets `Background`, and render that outer container instead.
 
 ### Integration with BubbleTea
 

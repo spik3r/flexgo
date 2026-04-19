@@ -1,9 +1,16 @@
 package flexgo
 
-import "charm.land/lipgloss/v2"
+import (
+	"image/color"
 
-func applyAlign(view string, w, h int, align Align) string {
+	"charm.land/lipgloss/v2"
+)
+
+func applyAlign(view string, w, h int, align Align, bg color.Color) string {
 	style := lipgloss.NewStyle().Width(w).Height(h)
+	if bg != nil {
+		style = style.Background(bg)
+	}
 
 	switch align {
 	case AlignCenter:
