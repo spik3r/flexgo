@@ -73,8 +73,8 @@ type Node struct {
 
 	Gap int // main-axis space inserted between siblings.
 
-	Padding int     // uniform inner padding shorthand; shadowed by Paddings.
-	Margin  int     // uniform outer margin shorthand; shadowed by Margins.
+	Padding  int     // uniform inner padding shorthand; shadowed by Paddings.
+	Margin   int     // uniform outer margin shorthand; shadowed by Margins.
 	Paddings Spacing // per-side padding; non-zero wins over Padding.
 	Margins  Spacing // per-side margin; non-zero wins over Margin.
 

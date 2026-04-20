@@ -2,6 +2,21 @@
 
 A Go library for building flexible, responsive terminal UIs (TUIs) using a flexbox-inspired layout system. flexgo wraps the [Charm](https://charm.sh/) ecosystem ([BubbleTea](https://github.com/charmbracelet/bubbletea), [Lipgloss](https://github.com/charmbracelet/lipgloss)) and exposes a tree-based layout API modelled after CSS Flexbox.
 
+![flexgo scanner demo](docs/demo-scanner.gif)
+
+A larger reference app built on flexgo — three screens, tabbed scrollable panels, keymap modal, centralised key dispatch. See [`demo/scanner/`](demo/scanner/) for the architectural tour.
+
+## Recipe gallery
+
+| | |
+|---|---|
+| ![dashboard](docs/layouts-dashboard.gif) | **`layouts.Dashboard`** — sidebar + header + main + status. The htop / k9s / lazygit shape. |
+| ![tabs](docs/layouts-tabs.gif) | **`layouts.Tabs`** — tab strip + active panel; the active-tab underline tracks the title via `AlignSelf`. |
+| ![form](docs/layouts-form.gif) | **`layouts.Form`** — stacked label / field rows with right-aligned labels. |
+| ![modal](docs/layouts-modal.gif) | **`layouts.Modal`** — centred bordered dialog floated via auto-margins. |
+
+> GIFs are generated from [`tapes/`](tapes/) using [vhs](https://github.com/charmbracelet/vhs).
+
 ## Installation
 
 ```bash
@@ -331,6 +346,12 @@ go test -run TestExampleGolden -update
 fields is not safe concurrently with rendering; synchronize external writes if
 your update loop changes nodes while another goroutine calls `Render`.
 
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the onboarding tour:
+project layout, local dev setup, code conventions, the recipe-author
+checklist, and the release / versioning process.
+
 ## License
 
-MIT
+[MIT](LICENSE)

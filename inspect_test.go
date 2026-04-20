@@ -19,9 +19,9 @@ func TestValidateHappy(t *testing.T) {
 
 func TestValidateDetectsConflicts(t *testing.T) {
 	cases := []struct {
-		name  string
-		node  *Node
-		want  string
+		name string
+		node *Node
+		want string
 	}{
 		{"view+children", &Node{View: func(int, int) string { return "" }, Children: []*Node{{}}}, "View and Children"},
 		{"padding+paddings", &Node{Padding: 1, Paddings: Spacing{Top: 1}}, "Padding and Paddings"},
