@@ -65,3 +65,68 @@ func TestWithBackground(t *testing.T) {
 		t.Errorf("Background not applied")
 	}
 }
+
+func TestDashboardShape(t *testing.T) {
+	view := func(w, h int) string { return "" }
+	root := Dashboard(20, 3, 1, view, view, view, view)
+
+	if root.Dir != flexgo.Row {
+		t.Fatalf("dashboard root should be Row")
+	}
+	if len(root.Children) != 2 {
+		t.Fatalf("expected 2 dashboard columns, got %d", len(root.Children))
+	}
+	if root.Children[0].Width != 20 {
+		t.Fatalf("sidebar width: expected 20, got %d", root.Children[0].Width)
+	}
+	right := root.Children[1]
+	if right.Dir != flexgo.Col {
+		t.Fatalf("dashboard right column should be Col")
+	}
+	if len(right.Children) != 3 {
+		t.Fatalf("expected header/main/status on right, got %d", len(right.Children))
+	}
+}
+
+func TestSplitPaneRatioClamping(t *testing.T) {
+	root := SplitPane(flexgo.Row, 200, nil, nil)
+	if root.Children[0].Flex != 99 || root.Children[1].Flex != 1 {
+		t.Fatalf("ratio should clamp to 99/1, got %d/%d", root.Children[0].Flex, root.Children[1].Flex)
+	}
+
+	root = SplitPane(flexgo.Row, -1, nil, nil)
+	if root.Children[0].Flex != 1 || root.Children[1].Flex != 99 {
+		t.Fatalf("ratio should clamp to 1/99, got %d/%d", root.Children[0].Flex, root.Children[1].Flex)
+	}
+}
+
+func TestSplitPaneFlex(t *testing.T) {
+	root := SplitPaneFlex(flexgo.Row, 1, 3, nil, nil)
+	if root.Children[0].Flex != 1 || root.Children[1].Flex != 3 {
+		t.Fatalf("expected flex 1/3, got %d/%d", root.Children[0].Flex, root.Children[1].Flex)
+	}
+
+	root = SplitPaneFlex(flexgo.Col, 0, -5, nil, nil)
+	if root.Children[0].Flex != 1 || root.Children[1].Flex != 1 {
+		t.Fatalf("non-positive weights should clamp to 1/1, got %d/%d", root.Children[0].Flex, root.Children[1].Flex)
+	}
+}
+
+func TestGridShape(t *testing.T) {
+	root := Grid(2, 3, 1, nil)
+	if root.Dir != flexgo.Col {
+		t.Fatalf("grid root should be Col")
+	}
+	if len(root.Children) != 2 {
+		t.Fatalf("expected 2 rows, got %d", len(root.Children))
+	}
+	for _, row := range root.Children {
+		if row.Dir != flexgo.Row {
+			t.Fatalf("row should be Row")
+		}
+		if len(row.Children) != 3 {
+			t.Fatalf("expected 3 columns, got %d", len(row.Children))
+		}
+	}
+}
+

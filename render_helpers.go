@@ -18,7 +18,7 @@ func resolveSpacing(shorthand int, sides Spacing) Spacing {
 }
 
 func hasExplicitBorder(n *Node) bool {
-	return n.Border != (lipgloss.Border{})
+	return n.ShowBorder
 }
 
 func debugLabel(name string, w, h int) string {
@@ -148,10 +148,11 @@ func join(parts []string, dir Direction, justify Justify, totalW, totalH int, ga
 	case JustifyCenter:
 		pad := remaining / 2
 		centered := interleave(parts, dir, gap, bg, cross)
-		return concat([]string{spacer(dir, pad, bg, cross), centered, spacer(dir, pad, bg, cross)}, dir)
+		lead := spacer(dir, pad, bg, cross)
+		return surround(dir, lead, centered, lead)
 	case JustifyEnd:
 		withGap := interleave(parts, dir, gap, bg, cross)
-		return concat([]string{spacer(dir, remaining, bg, cross), withGap}, dir)
+		return surround(dir, spacer(dir, remaining, bg, cross), withGap, "")
 	case JustifySpaceBetween:
 		if len(parts) == 1 {
 			return parts[0]
@@ -227,6 +228,21 @@ func concat(parts []string, dir Direction) string {
 		return lipgloss.JoinHorizontal(lipgloss.Top, parts...)
 	}
 	return lipgloss.JoinVertical(lipgloss.Left, parts...)
+}
+
+// surround concatenates lead + mid + trail in the main-axis direction,
+// skipping empty segments so callers don't produce spurious blank rows
+// or columns when a side has no spacer.
+func surround(dir Direction, lead, mid, trail string) string {
+	parts := make([]string, 0, 3)
+	if lead != "" {
+		parts = append(parts, lead)
+	}
+	parts = append(parts, mid)
+	if trail != "" {
+		parts = append(parts, trail)
+	}
+	return concat(parts, dir)
 }
 
 func interleave(parts []string, dir Direction, gap int, bg color.Color, cross int) string {

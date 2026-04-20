@@ -119,7 +119,13 @@ func (b *NodeBuilder) Name(name string) *NodeBuilder {
 	return b
 }
 
+func (b *NodeBuilder) ShowBorder(v bool) *NodeBuilder {
+	b.node.ShowBorder = v
+	return b
+}
+
 func (b *NodeBuilder) Border(border lipgloss.Border) *NodeBuilder {
+	b.node.ShowBorder = true
 	b.node.Border = border
 	return b
 }

@@ -273,38 +273,33 @@ Render(w, h)
 Run the examples to see flexgo in action. Full index: `example/README.md`.
 
 ```bash
-# Static layout example
-cd example/basic && go run main.go
+# Static layouts
+cd example/basics/basic && go run main.go
+cd example/basics/centered && go run main.go
+cd example/basics/justify && go run main.go
+cd example/basics/align && go run main.go
+cd example/basics/spacing && go run main.go
 
-# Builder API (basic dashboard)
-cd example/builder_basic && go run main.go
-
-# Builder API (AlignSelf + Border)
-cd example/builder_alignself && go run main.go
+# Builder API
+cd example/builder/basic && go run main.go
+cd example/builder/alignself && go run main.go
 
 # Dynamic BubbleTea example
 cd example/dynamic && go run main.go
 
-# Centered layout example
-cd example/centered && go run main.go
+# Auto-margin centering
+cd example/margins/hautocenter && go run main.go
+cd example/margins/vautocenter && go run main.go
+cd example/margins/centered_layout && go run main.go
 
-# Justify modes demo
-cd example/justify && go run main.go
-
-# Align modes demo
-cd example/align && go run main.go
-
-# Spacing controls demo
-cd example/spacing && go run main.go
-
-# Horizontal auto-margin centering demo
-cd example/hautocenter && go run main.go
-
-# Vertical auto-margin centering demo
-cd example/vautocenter && go run main.go
-
-# Full center (horizontal + vertical) demo
-cd example/centeredLayout && go run main.go
+# Recipes (flexgo/layouts)
+cd example/layouts/dashboard && go run main.go
+cd example/layouts/form && go run main.go
+cd example/layouts/grid && go run main.go
+cd example/layouts/headerbodyfooter && go run main.go
+cd example/layouts/modal && go run main.go
+cd example/layouts/splitpane && go run main.go
+cd example/layouts/tabs && go run main.go
 ```
 
 ## CSS Flexbox Comparison

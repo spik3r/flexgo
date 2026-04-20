@@ -14,35 +14,36 @@ Module path: `github.com/spik3r/flexgo`
 # Run tests
 go test ./...
 
+# Regenerate example goldens after intentional output changes
+go test -run TestExampleGolden -update .
+
 # Build the module
 go build ./...
 
-# Run the static layout example
-cd example/basic && go run main.go
-
-# Run the interactive BubbleTea example
+# Examples live under example/<group>/<name>/main.go — e.g.
+cd example/basics/basic && go run main.go
 cd example/dynamic && go run main.go
-
-# Run the vertical auto-margin centering example
-cd example/vautocenter && go run main.go
-
-# Run the horizontal auto-margin centering example
-cd example/hautocenter && go run main.go
-
-# Run the full center (horizontal + vertical) example
-cd example/centeredLayout && go run main.go
+cd example/layouts/dashboard && go run main.go
 ```
 
 ## Architecture
 
-The library is implemented in four files:
+The core library lives in these files at the module root:
 
 | File | Role |
 |------|------|
-| `node.go` | Defines the `Node` struct — the single public type. All layout properties live here. |
-| `layout.go` | `distribute()` — partitions available width/height among children using flex weights and fixed sizes. |
-| `render.go` | `Node.Render(w, h int) string` — the rendering entry point. Recursively renders the node tree, applying margin → padding → content/children → alignment. |
-| `align.go` | Cross-axis alignment helpers built on top of lipgloss. |
+| `node.go` | Defines the `Node` struct plus `HBox`/`VBox`/`Leaf`/`Spacer`/`DebugAll`/`DebugOff` constructors. |
+| `layout.go` | `distribute()` — partitions the main axis among children using flex weights and fixed sizes. |
+| `render.go` | `Node.Render(w, h int) string` — rendering entry point. Recursively renders the tree, applying margin → border → padding → content/children → alignment. |
+| `render_helpers.go` | Shared layout/paint helpers (`resolveSpacing`, `resolveMainAxisSizes`, `join`, `asymmetricMargin`, etc.). |
+| `align.go` | `applyAlign` — cross-axis alignment wrapper over lipgloss. |
+| `builder.go` | `NodeBuilder` fluent API mirroring `Node`'s public fields. |
+| `inspect.go` | `Validate(root) error` and `Inspect(root) string` diagnostics. |
+
+The `layouts/` sub-package provides ready-made recipes (one file per
+recipe): `dashboard.go`, `form.go`, `grid.go`, `headerbodyfooter.go`,
+`modal.go`, `splitpane.go`, `tabs.go`, plus `layouts.go` (shared
+helpers / internal).
 
 ### Node tree rendering flow
 

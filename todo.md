@@ -9,13 +9,73 @@ Legend: 🐞 bug · 🧪 test gap · 🧹 polish · 🎨 feature · 🏛️ arch
 
 ## Priority 1 — Safe polish (non-breaking)
 
-### P2. 🧹 `surround(dir, lead, mid, trail)` helper
+### P2. 🧹 ~~`surround(dir, lead, mid, trail)` helper~~ — shipped.
+Lives in `render_helpers.go`; used by `join()` for `JustifyCenter`
+and `JustifyEnd`.
 
-**File:** `render_helpers.go`
+### P5. 🐞 ~~`layouts.Tabs` byte-length underline~~ — shipped.
 
-Several call sites build a 3-element slice just to pass to `concat`.
-A `surround` helper reads cleaner. Micro-win on the next touch of
-that file.
+### P6. 🧹 ~~`layouts.Form` spacer → `Gap: 1`~~ — shipped.
+
+### P7. 🧹 ~~`layouts.Dashboard` sidebar construction~~ — shipped.
+
+### P8. 🧪 ~~GoDoc `Example*` stubs~~ — shipped; deleted in favour of
+golden coverage via `example/layouts/*`.
+
+### P9. 🧹 ~~Uniform `// Customize:` block on each recipe~~ — shipped.
+
+---
+
+## Priority 1.5 — Architectural review findings
+
+### AR1. 🐞 ~~Silent conflicts between co-located fields~~ — shipped.
+Field-level GoDoc on `Node` spells out each precedence
+(`View`/`Children`, `Padding`/`Paddings`, `Margin`/`Margins`,
+`Flex`/`Width`/`Height`, `ShowBorder`/`Debug`). See `node.go`.
+
+### AR2. 🧹 ~~Duplicate main-axis clamp in `renderChildren`~~ — shipped.
+Second clamp is now cross-axis only; main-axis clamping stays in
+`resolveMainAxisSizes`.
+
+### AR3. 🧹 ~~Extract auto-margin application from `render`~~ — shipped.
+`applyAutoMargins` + `splitAuto` helpers in `render.go`.
+
+### AR4. 🐞 ~~`Debug` + explicit `Border` double-reserves a row~~ — shipped.
+Policy: explicit border wins; debug wrapper is suppressed when
+`ShowBorder` is set. Pinned by `TestDebugPlusExplicitBorderPrefersBorder`.
+
+### AR5. 🧹 ~~`hasExplicitBorder` relies on struct zero-value equality~~ — shipped.
+Added `Node.ShowBorder bool` as the explicit opt-in.
+`builder.Border()` keeps the old behaviour by auto-setting
+`ShowBorder = true`; struct-literal users must set it explicitly.
+
+### AR6. 🎨 ~~`Validate(root) error` + `Inspect(root) string`~~ — shipped.
+New file `inspect.go`, tested in `inspect_test.go`.
+
+### AR7. 🏛️ ~~Split `layouts/layouts.go` into file-per-recipe~~ — shipped.
+One file per recipe (`dashboard.go`, `form.go`, `grid.go`,
+`headerbodyfooter.go`, `modal.go`, `splitpane.go`, `tabs.go`),
+shared helpers in `internal.go`, package doc in `doc.go`.
+
+### AR8. 🧹 ~~`NodeBuilder` drift guard~~ — shipped.
+Kept the builder (public API), added `TestBuilderCoversAllNodeFields`
+so new `Node` fields fail CI until the builder catches up.
+
+### AR9. 🧪 ~~Test gaps~~ — shipped.
+`render_edge_test.go` covers ambient-bg propagation, impossible
+min constraints (no-panic), auto-margin + fixed size, and the
+Debug + Border interaction.
+
+### AR10. 🧹 ~~Docs drift~~ — shipped.
+CLAUDE.md architecture table rewritten to match the seven-ish
+files that actually exist; README examples index refreshed to
+match the real `example/` tree.
+
+### AR11. 🎨 ~~`SplitPaneFlex` variant~~ — shipped.
+`layouts/splitpane.go`; percentage `SplitPane` now delegates to it.
+
+### AR12. 🧹 ~~Repeated "full-box centered label" closure~~ — shipped.
+`centeredView` helper in `layouts/internal.go`; `Tabs` now uses it.
 
 ---
 
@@ -31,18 +91,22 @@ all dimensions/styles overridable by the caller.
 
 ### R2. Initial recipe set (in order of usefulness)
 
-1. **`layouts.Dashboard`** — sidebar + header + main + status bar.
+1. ~~**`layouts.Dashboard`**~~ — shipped.
    The htop/k9s/lazygit shape.
 2. ~~**`layouts.HeaderBodyFooter`**~~ — shipped.
 3. ~~**`layouts.Modal`**~~ — shipped (no dimmed backdrop yet — the
    caller overlays it by swapping trees. A proper backdrop needs
    composite rendering; revisit after X1).
-4. **`layouts.Form`** — stacked `Label: Input` rows with aligned
+4. ~~**`layouts.Form`**~~ — shipped.
+   stacked `Label: Input` rows with aligned
    labels.
-5. **`layouts.Tabs`** — tab bar + active panel. Uses `AlignSelf` for
+5. ~~**`layouts.Tabs`**~~ — shipped.
+   tab bar + active panel. Uses `AlignSelf` for
    the active-tab underline.
-6. **`layouts.SplitPane`** — fixed-ratio two-pane split.
-7. **`layouts.Grid`** — uniform N×M grid.
+6. ~~**`layouts.SplitPane`**~~ — shipped.
+   fixed-ratio two-pane split.
+7. ~~**`layouts.Grid`**~~ — shipped.
+   uniform N×M grid.
 
 ### R3. Per-recipe deliverables
 
@@ -96,23 +160,34 @@ the model. Decide explicitly; low priority until someone hits it.
   swappable without rewriting recipes.
 - 🧪 **Benchmark suite** — baseline before X1 so the refactor can
   demonstrate no regression.
-- 🧹 **`example/debug_tree`** — deep tree with `Debug: true` on every
-  container; visual reference for the debug mode.
-- 🧹 **`example/gap_vs_spacebetween`** — side-by-side. Most common
-  flexbox confusion; worth a dedicated demo.
+- 🧹 ~~**`example/basics/debug_tree`**~~ — shipped. Also demos
+  `Inspect(root)`.
+- 🧹 ~~**`example/basics/gap_vs_spacebetween`**~~ — shipped.
 - 🧹 **`example/bubble_components`** — wrap `textinput`, `viewport`,
   `spinner` as `View` callbacks. Makes the BubbleTea value prop
   concrete.
-- 🧹 **`example/min_max`** — exercises `MinWidth`/`MaxWidth`.
+- 🧹 ~~**`example/basics/min_max`**~~ — shipped.
 - 🧹 **`example/responsive`** — breakpoint switching.
+
+---
+
+## Reference app
+
+`demo/scanner/` is a larger skeleton showing how to structure an app
+with multiple screens, tabs, scrollable panels, a modal, and a
+centralised keymap. Its `README.md` is the architectural tour; copy
+the patterns (root-model routing, one-way screen data flow, central
+`KeyMap`, viewport state living on the screen) when building apps on
+flexgo.
 
 ---
 
 ## Suggested order of work
 
-1. **P2** — `surround` helper, low-risk polish.
-2. **§2 Recipes** — start with `Dashboard` and `HeaderBodyFooter`.
-3. **X1** — two-phase layout, only when Wrap / richer min-max /
-   caching becomes genuinely needed.
-
-§4 is opportunistic — pick up as time allows.
+1. **X1** — two-phase layout, only when Wrap / richer min-max /
+   caching becomes genuinely needed. Priority-3 items (X2/X3/X4)
+   unblock behind it.
+2. Remaining §4 items are opportunistic — `example/bubble_components`,
+   `example/responsive`, the Place/Overflow/Percentage/Theme features,
+   and the benchmark suite. Each warrants its own design discussion
+   before coding.

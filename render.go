@@ -21,11 +21,14 @@ func (n *Node) render(w, h int, parentBg color.Color) string {
 	allocW := w
 	allocH := h
 
-	if hasExplicitBorder(n) || n.Debug {
+	// Border and Debug both wrap the content. ShowBorder wins when both
+	// are set so we reserve exactly the space the outer wrapper will use.
+	showDebugFrame := n.Debug && !hasExplicitBorder(n)
+	if hasExplicitBorder(n) || showDebugFrame {
 		w -= 2
 		h -= 2
-		if n.Debug {
-			h--
+		if showDebugFrame {
+			h-- // one extra row for the debug label
 		}
 		if w < 0 {
 			w = 0
@@ -94,7 +97,7 @@ func (n *Node) render(w, h int, parentBg color.Color) string {
 			borderStyle = borderStyle.BorderBackground(n.BorderBackground)
 		}
 		inner = borderStyle.Render(inner)
-	} else if n.Debug {
+	} else if showDebugFrame {
 		meta := lipgloss.NewStyle().Bold(true).Width(w).MaxWidth(w).Render(debugLabel(n.Name, allocW, allocH))
 		inner = lipgloss.JoinVertical(lipgloss.Left, meta, inner)
 		inner = lipgloss.NewStyle().
@@ -107,43 +110,45 @@ func (n *Node) render(w, h int, parentBg color.Color) string {
 		inner = asymmetricMargin(inner, margin.Top, margin.Right, margin.Bottom, margin.Left, parentBg)
 	}
 
+	return applyAutoMargins(inner, n, availW, availH, parentBg)
+}
+
+// applyAutoMargins pushes a rendered node within its allocated slot
+// when MarginLeftAuto/RightAuto/TopAuto/BottomAuto are set. Auto-margins
+// only engage when there is spare space on the relevant axis.
+func applyAutoMargins(inner string, n *Node, availW, availH int, parentBg color.Color) string {
 	if n.MarginLeftAuto || n.MarginRightAuto {
-		innerW := lipgloss.Width(inner)
-		spare := availW - innerW
+		spare := availW - lipgloss.Width(inner)
 		if spare > 0 {
-			var left, right int
-			switch {
-			case n.MarginLeftAuto && n.MarginRightAuto:
-				left = spare / 2
-				right = spare - left
-			case n.MarginLeftAuto:
-				left = spare
-			case n.MarginRightAuto:
-				right = spare
-			}
+			left, right := splitAuto(spare, n.MarginLeftAuto, n.MarginRightAuto)
 			inner = asymmetricMargin(inner, 0, right, 0, left, parentBg)
 		}
 	}
 
 	if n.MarginTopAuto || n.MarginBottomAuto {
-		innerH := lipgloss.Height(inner)
-		spare := availH - innerH
+		spare := availH - lipgloss.Height(inner)
 		if spare > 0 {
-			var top, bottom int
-			switch {
-			case n.MarginTopAuto && n.MarginBottomAuto:
-				top = spare / 2
-				bottom = spare - top
-			case n.MarginTopAuto:
-				top = spare
-			case n.MarginBottomAuto:
-				bottom = spare
-			}
+			top, bottom := splitAuto(spare, n.MarginTopAuto, n.MarginBottomAuto)
 			inner = asymmetricMargin(inner, top, 0, bottom, 0, parentBg)
 		}
 	}
 
 	return inner
+}
+
+// splitAuto divides spare space between two auto-margin ends. Centering
+// (both ends) gives the extra pixel to the trailing side.
+func splitAuto(spare int, leading, trailing bool) (int, int) {
+	switch {
+	case leading && trailing:
+		l := spare / 2
+		return l, spare - l
+	case leading:
+		return spare, 0
+	case trailing:
+		return 0, spare
+	}
+	return 0, 0
 }
 
 func (n *Node) renderChildren(w, h int, ambientBg color.Color) string {
@@ -169,17 +174,23 @@ func (n *Node) renderChildren(w, h int, ambientBg color.Color) string {
 			ch = sizes[i]
 		}
 
-		if child.MinWidth > 0 && cw < child.MinWidth {
-			cw = child.MinWidth
-		}
-		if child.MinHeight > 0 && ch < child.MinHeight {
-			ch = child.MinHeight
-		}
-		if child.MaxWidth > 0 && cw > child.MaxWidth {
-			cw = child.MaxWidth
-		}
-		if child.MaxHeight > 0 && ch > child.MaxHeight {
-			ch = child.MaxHeight
+		// Main-axis min/max is already applied by resolveMainAxisSizes.
+		// Clamp the cross axis here so a tall row or wide column child
+		// can opt into a tighter/looser container size.
+		if isRow {
+			if child.MinHeight > 0 && ch < child.MinHeight {
+				ch = child.MinHeight
+			}
+			if child.MaxHeight > 0 && ch > child.MaxHeight {
+				ch = child.MaxHeight
+			}
+		} else {
+			if child.MinWidth > 0 && cw < child.MinWidth {
+				cw = child.MinWidth
+			}
+			if child.MaxWidth > 0 && cw > child.MaxWidth {
+				cw = child.MaxWidth
+			}
 		}
 
 		childView := child.render(cw, ch, ambientBg)

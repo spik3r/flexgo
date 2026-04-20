@@ -348,7 +348,7 @@ func TestRenderTreeImmutable(t *testing.T) {
 		Align:    AlignCenter,
 		Children: []*Node{
 			{Flex: 1, MinWidth: 10, MaxWidth: 40, Background: lipgloss.Color("61")},
-			{Flex: 2, AlignSelf: &alignCenter, Border: lipgloss.NormalBorder()},
+			{Flex: 2, AlignSelf: &alignCenter, ShowBorder: true, Border: lipgloss.NormalBorder()},
 			{Width: 15, Height: 4, Name: "fixed"},
 		},
 	}
