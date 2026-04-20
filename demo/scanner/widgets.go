@@ -59,16 +59,17 @@ var screenTabs = []struct {
 	{"3", "History", ScreenHistory},
 }
 
-// pageShell wraps a body in the shared chrome: branded title bar,
-// subheader with flex-between subtitle + screen indicator, a margined
-// body slot, and a two-row footer carrying screen-specific + global
-// keymap hints.
+// pageShell wraps a body in the shared chrome: a 1-cell outer frame
+// in the page bg, then a branded title bar, subheader with flex-
+// between subtitle + screen indicator, a margined body slot, and a
+// two-row footer carrying screen-specific + global keymap hints.
 //
 // Screens just provide Subtitle + Footer + Body. Everything else —
 // title, screen indicator, global hints, padding — lives here, so
 // "consistent look" stays consistent across screens.
 func pageShell(subtitle string, active Screen, body *flexgo.Node, screenHint string) *flexgo.Node {
-	return &flexgo.Node{
+	chrome := &flexgo.Node{
+		Flex:       1,
 		Dir:        flexgo.Col,
 		Background: colBg,
 		Children: []*flexgo.Node{
@@ -106,6 +107,27 @@ func pageShell(subtitle string, active Screen, body *flexgo.Node, screenHint str
 
 			// Footer row 2 — global hints; always the same.
 			{Height: 1, Background: colPanel, View: globalHintView()},
+		},
+	}
+
+	// Outer 1-cell frame so the chrome doesn't touch the terminal
+	// edges — gives the whole UI a small breathing margin.
+	return &flexgo.Node{
+		Dir:        flexgo.Col,
+		Background: colBg,
+		Children: []*flexgo.Node{
+			{Height: 1, Background: colBg, View: solidView(colBg)},
+			{
+				Flex:       1,
+				Dir:        flexgo.Row,
+				Background: colBg,
+				Children: []*flexgo.Node{
+					{Width: 1, Background: colBg, View: solidView(colBg)},
+					chrome,
+					{Width: 1, Background: colBg, View: solidView(colBg)},
+				},
+			},
+			{Height: 1, Background: colBg, View: solidView(colBg)},
 		},
 	}
 }
