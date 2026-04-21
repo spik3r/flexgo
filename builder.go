@@ -150,6 +150,11 @@ func (b *NodeBuilder) Background(c color.Color) *NodeBuilder {
 	return b
 }
 
+func (b *NodeBuilder) Foreground(c color.Color) *NodeBuilder {
+	b.node.Foreground = c
+	return b
+}
+
 func (b *NodeBuilder) View(view func(w, h int) string) *NodeBuilder {
 	b.node.View = view
 	return b

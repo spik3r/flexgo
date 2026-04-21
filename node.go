@@ -97,6 +97,7 @@ type Node struct {
 	BorderBackground color.Color
 
 	Background color.Color
+	Foreground color.Color
 
 	View func(w, h int) string // leaf renderer; ignored when Children is non-empty.
 }
