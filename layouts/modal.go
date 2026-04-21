@@ -74,3 +74,15 @@ func WithBackground(n *flexgo.Node, bg color.Color) *flexgo.Node {
 	n.Background = bg
 	return n
 }
+
+// WithForeground sets n.Foreground and returns n, for fluent
+// post-construction tweaks to a recipe:
+//
+//	root := layouts.WithForeground(
+//	    layouts.HeaderBodyFooter(...),
+//	    lipgloss.Color("250"),
+//	)
+func WithForeground(n *flexgo.Node, fg color.Color) *flexgo.Node {
+	n.Foreground = fg
+	return n
+}

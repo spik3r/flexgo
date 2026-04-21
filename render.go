@@ -86,6 +86,9 @@ func (n *Node) render(w, h int, parentBg color.Color) string {
 	if n.Background != nil {
 		boxStyle = boxStyle.Background(n.Background)
 	}
+	if n.Foreground != nil {
+		boxStyle = boxStyle.Foreground(n.Foreground)
+	}
 	inner = boxStyle.Render(inner)
 
 	if hasExplicitBorder(n) {
