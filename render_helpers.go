@@ -142,14 +142,18 @@ func join(parts []string, dir Direction, justify Justify, totalW, totalH int, ga
 		containerSize = totalH
 	}
 
-	remaining := containerSize - totalSize
+	minGap := gap
+	if minGap < 0 {
+		minGap = 0
+	}
+	remaining := containerSize - totalSize - minGap*(len(parts)-1)
 
 	switch justify {
 	case JustifyCenter:
 		pad := remaining / 2
 		centered := interleave(parts, dir, gap, bg, cross)
 		lead := spacer(dir, pad, bg, cross)
-		return surround(dir, lead, centered, lead)
+		return surround(dir, lead, centered, spacer(dir, remaining-pad, bg, cross))
 	case JustifyEnd:
 		withGap := interleave(parts, dir, gap, bg, cross)
 		return surround(dir, spacer(dir, remaining, bg, cross), withGap, "")
@@ -157,7 +161,10 @@ func join(parts []string, dir Direction, justify Justify, totalW, totalH int, ga
 		if len(parts) == 1 {
 			return parts[0]
 		}
-		space := remaining / (len(parts) - 1)
+		space := minGap + remaining/(len(parts)-1)
+		if space < minGap {
+			space = minGap
+		}
 		return interleave(parts, dir, space, bg, cross)
 	default:
 		return concat(parts, dir)
@@ -246,6 +253,9 @@ func surround(dir Direction, lead, mid, trail string) string {
 }
 
 func interleave(parts []string, dir Direction, gap int, bg color.Color, cross int) string {
+	if gap <= 0 {
+		return concat(parts, dir)
+	}
 	var out []string
 
 	for i, p := range parts {
