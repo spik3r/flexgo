@@ -109,10 +109,10 @@ relative weight.
 Min/max constraints can adjust child allocations; a child's own fixed sizing
 can still reduce the area passed to its `View`. Remaining space is
 redistributed among eligible children. Integer division gives leftover cells
-to earlier flexible children. If requested fixed sizes or minima exceed the
-available space, there is no additional flexible share. The allocator does not
-shrink those sizes merely to fit, and rendering does not guarantee clipping to
-the parent's bounds.
+to earlier flexible children. If allocations retained after constraints exhaust
+the available space, other flexible children receive no additional share. The
+allocator does not shrink those sizes merely to fit, and rendering does not
+guarantee clipping to the parent's bounds.
 
 ### Justify (Main Axis)
 
