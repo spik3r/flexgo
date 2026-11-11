@@ -123,6 +123,35 @@ func TestDistributeFlexOverflowKeepsExistingRules(t *testing.T) {
 	}
 }
 
+func TestDistributeBudgetArithmeticOverflow(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	cases := []struct {
+		name     string
+		total    int
+		gap      int
+		children []*Node
+		want     []int
+	}{
+		{"fixed sum overflow", 20, 0, []*Node{{Width: maxInt, Height: maxInt}, {Width: maxInt, Height: maxInt}, {Flex: 1}}, []int{maxInt, maxInt, 0}},
+		{"fixed sum overflow with gap", 20, 2, []*Node{{Width: maxInt, Height: maxInt}, {Width: maxInt, Height: maxInt}, {Flex: 1}}, []int{maxInt, maxInt, 0}},
+		{"gap product overflow", 20, maxInt, []*Node{{Flex: 1}, {Flex: 1}, {Flex: 1}}, []int{0, 0, 0}},
+		{"gap exceeds budget", 20, 11, []*Node{{Flex: 1}, {Flex: 1}, {Flex: 1}}, []int{0, 0, 0}},
+		{"zero budget with gap", 0, maxInt, []*Node{{Flex: 1}, {Flex: 1}}, []int{0, 0}},
+		{"negative budget keeps fixed", -1, 0, []*Node{{Width: maxInt, Height: maxInt}, {Width: maxInt, Height: maxInt}, {Flex: 1}}, []int{maxInt, maxInt, 0}},
+		{"fixed and gap leave one cell", maxInt, 1, []*Node{{Width: maxInt - 2, Height: maxInt - 2}, {Flex: 1}}, []int{maxInt - 2, 1}},
+		{"large gap leaves one cell for exact weights", maxInt, maxInt / 2, []*Node{{Flex: maxInt}, {Flex: 1}, {Flex: 1}}, []int{1, 0, 0}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, isRow := range []bool{true, false} {
+				if got := distribute(tc.total, tc.children, isRow, tc.gap); !reflect.DeepEqual(got, tc.want) {
+					t.Errorf("isRow=%t: got %v, want %v", isRow, got, tc.want)
+				}
+			}
+		})
+	}
+}
+
 func TestDistributeFixedChildren(t *testing.T) {
 	children := []*Node{
 		{Width: 20},

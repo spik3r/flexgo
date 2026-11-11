@@ -8,15 +8,19 @@ func distribute(total int, children []*Node, isRow bool, gap int) []int {
 		return nil
 	}
 
-	totalGap := gap * (n - 1)
-	available := total - totalGap
+	available := total
+	if gap > 0 && n > 1 && (total <= 0 || gap > total/(n-1)) {
+		available = 0
+	} else {
+		available -= gap * (n - 1)
+	}
 
 	sizes := make([]int, n)
 
 	flexIndices := make([]int, 0, n)
 	flexValues := make([]int, n)
 
-	remaining := available
+	remaining := max(0, available)
 	totalFlex := 0
 	maxInt := int(^uint(0) >> 1)
 	exactFlex := false
@@ -31,7 +35,11 @@ func distribute(total int, children []*Node, isRow bool, gap int) []int {
 
 		if fixed > 0 {
 			sizes[i] = fixed
-			remaining -= fixed
+			if fixed >= remaining {
+				remaining = 0
+			} else {
+				remaining -= fixed
+			}
 		} else {
 			flex := c.Flex
 			if flex == 0 {
