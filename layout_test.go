@@ -152,6 +152,35 @@ func TestDistributeBudgetArithmeticOverflow(t *testing.T) {
 	}
 }
 
+func TestResolveMainAxisBudgetArithmeticOverflow(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	cases := []struct {
+		name     string
+		total    int
+		gap      int
+		children []*Node
+		want     []int
+	}{
+		{"gap product overflow with minimum", 20, maxInt, []*Node{{Flex: 1, MinWidth: 1, MinHeight: 1}, {Flex: 1}, {Flex: 1}}, []int{1, 0, 0}},
+		{"minimum sum overflow", 20, 0, []*Node{{Flex: 1, MinWidth: maxInt, MinHeight: maxInt}, {Flex: 1, MinWidth: maxInt, MinHeight: maxInt}, {Flex: 1}}, []int{maxInt, maxInt, 0}},
+		{"exact budget with minimum", 20, 2, []*Node{{Flex: 1, MinWidth: 8, MinHeight: 8}, {Flex: 1}, {Flex: 1}}, []int{8, 4, 4}},
+		{"over constrained minima", 20, 2, []*Node{{Flex: 1, MinWidth: 12, MinHeight: 12}, {Flex: 1, MinWidth: 12, MinHeight: 12}, {Flex: 1}}, []int{12, 12, 0}},
+		{"mixed fixed and minimum", 20, 2, []*Node{{Width: 6, Height: 6}, {Flex: 1, MinWidth: 8, MinHeight: 8}, {Flex: 1}}, []int{6, 8, 2}},
+		{"mixed fixed minimum and maximum", 30, 2, []*Node{{Width: 6, Height: 6}, {Flex: 1, MinWidth: 8, MinHeight: 8}, {Flex: 1, MaxWidth: 3, MaxHeight: 3}, {Flex: 1}}, []int{6, 8, 3, 7}},
+		{"maximum releases space", 20, 2, []*Node{{Flex: 1, MaxWidth: 2, MaxHeight: 2}, {Flex: 1}, {Flex: 1}}, []int{2, 7, 7}},
+		{"large exact boundary", maxInt, 1, []*Node{{Width: maxInt - 2, Height: maxInt - 2}, {Flex: 1, MinWidth: 1, MinHeight: 1}}, []int{maxInt - 2, 1}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, isRow := range []bool{true, false} {
+				if got := resolveMainAxisSizes(tc.total, tc.children, isRow, tc.gap); !reflect.DeepEqual(got, tc.want) {
+					t.Errorf("isRow=%t: got %v, want %v", isRow, got, tc.want)
+				}
+			}
+		})
+	}
+}
+
 func TestDistributeFixedChildren(t *testing.T) {
 	children := []*Node{
 		{Width: 20},

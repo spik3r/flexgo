@@ -2,18 +2,20 @@ package flexgo
 
 import "math/big"
 
+func contentBudget(total, gap, count int) int {
+	if gap > 0 && count > 1 && (total <= 0 || gap > total/(count-1)) {
+		return 0
+	}
+	return total - gap*(count-1)
+}
+
 func distribute(total int, children []*Node, isRow bool, gap int) []int {
 	n := len(children)
 	if n == 0 {
 		return nil
 	}
 
-	available := total
-	if gap > 0 && n > 1 && (total <= 0 || gap > total/(n-1)) {
-		available = 0
-	} else {
-		available -= gap * (n - 1)
-	}
+	available := contentBudget(total, gap, n)
 
 	sizes := make([]int, n)
 

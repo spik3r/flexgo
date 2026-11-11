@@ -55,10 +55,7 @@ func resolveMainAxisSizes(total int, children []*Node, isRow bool, gap int) []in
 		return sizes
 	}
 
-	totalContent := total - gap*(len(children)-1)
-	if totalContent < 0 {
-		totalContent = 0
-	}
+	totalContent := max(0, contentBudget(total, gap, len(children)))
 
 	frozen := make([]bool, len(children))
 
@@ -81,12 +78,16 @@ func resolveMainAxisSizes(total int, children []*Node, isRow bool, gap int) []in
 			break
 		}
 
-		used := 0
+		remainingContent := totalContent
 		remainingChildren := make([]*Node, 0, len(children))
 		remainingIndices := make([]int, 0, len(children))
 		for i, child := range children {
 			if frozen[i] {
-				used += sizes[i]
+				if sizes[i] >= remainingContent {
+					remainingContent = 0
+				} else {
+					remainingContent -= sizes[i]
+				}
 				continue
 			}
 			remainingChildren = append(remainingChildren, child)
@@ -95,11 +96,6 @@ func resolveMainAxisSizes(total int, children []*Node, isRow bool, gap int) []in
 
 		if len(remainingChildren) == 0 {
 			break
-		}
-
-		remainingContent := totalContent - used
-		if remainingContent < 0 {
-			remainingContent = 0
 		}
 
 		redistributed := distribute(remainingContent, remainingChildren, isRow, 0)
