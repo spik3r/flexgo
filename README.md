@@ -253,31 +253,53 @@ page := flexgo.NewNode().
 
 ## Integration with BubbleTea
 
-flexgo integrates seamlessly with [BubbleTea](https://github.com/charmbracelet/bubbletea):
+With Bubble Tea v2, return a `tea.View` built from flexgo's rendered string:
 
 ```go
+package main
+
+import (
+	"log"
+
+	tea "charm.land/bubbletea/v2"
+	"github.com/spik3r/flexgo"
+)
+
 type model struct {
-    width  int
-    height int
-    page   *flexgo.Node
-    ready  bool
+	width  int
+	height int
+	page   *flexgo.Node
+	ready  bool
 }
+
+func (m model) Init() tea.Cmd { return nil }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-    switch msg := msg.(type) {
-    case tea.WindowSizeMsg:
-        m.width = msg.Width
-        m.height = msg.Height
-        m.ready = true
-    }
-    return m, nil
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		m.ready = true
+	case tea.KeyPressMsg:
+		if msg.String() == "q" || msg.String() == "ctrl+c" {
+			return m, tea.Quit
+		}
+	}
+	return m, nil
 }
 
-func (m model) View() string {
-    if !m.ready {
-        return "Loading..."
-    }
-    return m.page.Render(m.width, m.height)
+func (m model) View() tea.View {
+	if !m.ready {
+		return tea.NewView("Loading...")
+	}
+	return tea.NewView(m.page.Render(m.width, m.height))
+}
+
+func main() {
+	page := &flexgo.Node{View: func(w, h int) string { return "Hello" }}
+	if _, err := tea.NewProgram(model{page: page}).Run(); err != nil {
+		log.Fatal(err)
+	}
 }
 ```
 
