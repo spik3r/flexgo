@@ -53,6 +53,18 @@ func validateNode(n *Node, path string, errs *[]error) {
 	if n.Height < 0 {
 		*errs = append(*errs, fmt.Errorf("%s: negative Height (%d)", path, n.Height))
 	}
+	if n.MinWidth < 0 {
+		*errs = append(*errs, fmt.Errorf("%s: negative MinWidth (%d)", path, n.MinWidth))
+	}
+	if n.MaxWidth < 0 {
+		*errs = append(*errs, fmt.Errorf("%s: negative MaxWidth (%d)", path, n.MaxWidth))
+	}
+	if n.MinHeight < 0 {
+		*errs = append(*errs, fmt.Errorf("%s: negative MinHeight (%d)", path, n.MinHeight))
+	}
+	if n.MaxHeight < 0 {
+		*errs = append(*errs, fmt.Errorf("%s: negative MaxHeight (%d)", path, n.MaxHeight))
+	}
 	if n.Gap < 0 {
 		*errs = append(*errs, fmt.Errorf("%s: negative Gap (%d)", path, n.Gap))
 	}

@@ -28,6 +28,10 @@ func TestValidateDetectsConflicts(t *testing.T) {
 		{"margin+margins", &Node{Margin: 1, Margins: Spacing{Top: 1}}, "Margin and Margins"},
 		{"negative flex", &Node{Flex: -1}, "negative Flex"},
 		{"negative width", &Node{Width: -1}, "negative Width"},
+		{"negative min width", &Node{MinWidth: -1}, "negative MinWidth"},
+		{"negative max width", &Node{MaxWidth: -1}, "negative MaxWidth"},
+		{"negative min height", &Node{MinHeight: -1}, "negative MinHeight"},
+		{"negative max height", &Node{MaxHeight: -1}, "negative MaxHeight"},
 		{"min>max width", &Node{MinWidth: 10, MaxWidth: 5}, "MinWidth"},
 		{"min>max height", &Node{MinHeight: 10, MaxHeight: 5}, "MinHeight"},
 	}
@@ -41,6 +45,52 @@ func TestValidateDetectsConflicts(t *testing.T) {
 				t.Fatalf("expected %q in error, got %q", tc.want, err.Error())
 			}
 		})
+	}
+}
+
+func TestValidateJoinsNegativeBoundsAcrossTree(t *testing.T) {
+	root := &Node{
+		MinWidth: -1,
+		MaxWidth: -2,
+		Children: []*Node{
+			{Name: "named", MinHeight: -3},
+			{MaxHeight: -4},
+			nil,
+		},
+	}
+	err := Validate(root)
+	if err == nil {
+		t.Fatal("expected joined diagnostics")
+	}
+	for _, want := range []string{
+		"root: negative MinWidth (-1)",
+		"root: negative MaxWidth (-2)",
+		"root.named: negative MinHeight (-3)",
+		"root.Children[1]: negative MaxHeight (-4)",
+		"root.Children[2]: nil node",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("missing %q in %q", want, err.Error())
+		}
+	}
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok || len(joined.Unwrap()) != 5 {
+		t.Fatalf("expected five joined diagnostics, got %v", err)
+	}
+}
+
+func TestValidateAllowsUnsetAndValidBounds(t *testing.T) {
+	if err := Validate(nil); err != nil {
+		t.Fatalf("nil root should be valid, got %v", err)
+	}
+	for _, node := range []*Node{
+		{MinWidth: 0, MaxWidth: 0, MinHeight: 0, MaxHeight: 0},
+		{MinWidth: 2, MaxWidth: 2, MinHeight: 1, MaxHeight: 3},
+		{MinWidth: 2, MaxHeight: 3},
+	} {
+		if err := Validate(node); err != nil {
+			t.Fatalf("valid bounds should pass: %+v: %v", node, err)
+		}
 	}
 }
 
