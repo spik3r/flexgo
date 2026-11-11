@@ -90,7 +90,7 @@ Three ways to size a node:
 node.Width = 80
 node.Height = 24
 
-// Flex (fills remaining space, 0 = don't stretch)
+// Relative share of remaining space along the parent's main axis
 node.Flex = 1
 
 // Constraints
@@ -98,7 +98,18 @@ node.MinWidth = 10
 node.MaxWidth = 100
 ```
 
-When a container has `Flex > 0`, it expands to fill available space from its parent. Children within use their `Flex`, `Width`, or `Height` to determine their size.
+`Render(w, h)` supplies the root's available size; the root's `Flex` value has no
+parent to act on. For children of a `Row`, a positive `Width` takes precedence
+over `Flex`; for children of a `Col`, a positive `Height` does. A child without
+a positive fixed size on that axis uses its `Flex` value as a relative weight.
+`Flex: 0` defaults to weight 1 in this case.
+
+Min/max constraints can adjust those allocations; remaining space is then
+redistributed among eligible children. Integer division gives leftover cells
+to earlier flexible children. If requested fixed sizes or minima exceed the
+available space, there is no additional flexible share. The allocator does not
+shrink those sizes merely to fit, and rendering does not guarantee clipping to
+the parent's bounds.
 
 ### Justify (Main Axis)
 
@@ -322,7 +333,7 @@ cd example/layouts/tabs && go run main.go
 | CSS Flexbox      | flexgo           | Description                                    |
 |-----------------|------------------|------------------------------------------------|
 | `flex-direction` | `Dir`            | `Row` = row, `Col` = column                     |
-| `flex`          | `Flex`           | Growth factor (0 = fixed size)                  |
+| `flex`          | `Flex`           | Relative main-axis weight; 0 defaults to 1 without a positive fixed size on that axis |
 | `width/height`  | `Width/Height`   | Fixed dimensions                               |
 | `justify-content` | `Justify`       | Main axis alignment                            |
 | `align-items`    | `Align`          | Cross axis alignment                           |
