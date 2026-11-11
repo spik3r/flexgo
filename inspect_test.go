@@ -1,6 +1,8 @@
 package flexgo
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -90,6 +92,64 @@ func TestValidateAllowsUnsetAndValidBounds(t *testing.T) {
 	} {
 		if err := Validate(node); err != nil {
 			t.Fatalf("valid bounds should pass: %+v: %v", node, err)
+		}
+	}
+}
+
+func TestValidateBoundInteractions(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	minInt := -maxInt - 1
+	cases := []struct {
+		name     string
+		min, max int
+		negative []string
+		order    bool
+	}{
+		{name: "negative min positive max", min: minInt, max: maxInt, negative: []string{"min"}},
+		{name: "positive min negative max", min: 1, max: minInt, negative: []string{"max"}},
+		{name: "both negative", min: -2, max: -1, negative: []string{"min", "max"}},
+		{name: "unset min", min: 0, max: 3},
+		{name: "unset max", min: 3, max: 0},
+		{name: "equal positive", min: 3, max: 3},
+		{name: "positive min above max", min: maxInt, max: 1, order: true},
+	}
+
+	for _, axis := range []string{"Width", "Height"} {
+		for _, tc := range cases {
+			t.Run(axis+"/"+tc.name, func(t *testing.T) {
+				node := &Node{}
+				if axis == "Width" {
+					node.MinWidth, node.MaxWidth = tc.min, tc.max
+				} else {
+					node.MinHeight, node.MaxHeight = tc.min, tc.max
+				}
+
+				var want []string
+				for _, bound := range tc.negative {
+					value := tc.min
+					if bound == "max" {
+						value = tc.max
+					}
+					want = append(want, fmt.Sprintf("root: negative %s%s (%d)", strings.ToUpper(bound[:1])+bound[1:], axis, value))
+				}
+				if tc.order {
+					want = append(want, fmt.Sprintf("root: Min%s (%d) > Max%s (%d)", axis, tc.min, axis, tc.max))
+				}
+
+				var got []string
+				if err := Validate(node); err != nil {
+					joined, ok := err.(interface{ Unwrap() []error })
+					if !ok {
+						t.Fatalf("expected joined diagnostics, got %T: %v", err, err)
+					}
+					for _, issue := range joined.Unwrap() {
+						got = append(got, issue.Error())
+					}
+				}
+				if !reflect.DeepEqual(got, want) {
+					t.Fatalf("diagnostics = %q, want %q", got, want)
+				}
+			})
 		}
 	}
 }
