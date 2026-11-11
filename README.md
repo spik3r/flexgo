@@ -98,13 +98,16 @@ node.MinWidth = 10
 node.MaxWidth = 100
 ```
 
-`Render(w, h)` supplies the root's available size; the root's `Flex` value has no
-parent to act on. For children of a `Row`, a positive `Width` takes precedence
-over `Flex`; for children of a `Col`, a positive `Height` does. A child without
-a positive fixed size on that axis uses its `Flex` value as a relative weight.
+`Render(w, h)` supplies the root's available size; root `Flex` and min/max do
+not choose it. Positive root `Width` or `Height` can reduce its inner area after
+frame and margin space is reserved. For children of a `Row`, a positive `Width`
+takes precedence over `Flex`; for children of a `Col`, a positive `Height` does.
+A child without a positive fixed size on that axis uses its `Flex` value as a
+relative weight.
 `Flex: 0` defaults to weight 1 in this case.
 
-Min/max constraints can adjust those allocations; remaining space is then
+Min/max constraints can adjust child allocations; a child's own fixed sizing
+can still reduce the area passed to its `View`. Remaining space is
 redistributed among eligible children. Integer division gives leftover cells
 to earlier flexible children. If requested fixed sizes or minima exceed the
 available space, there is no additional flexible share. The allocator does not

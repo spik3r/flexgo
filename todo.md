@@ -27,9 +27,10 @@ honour natural sizes. Needs X1.
 
 ### X4. 🏛️ `FlexGrow` / `FlexShrink` / `FlexBasis`
 
-Single `Flex` conflates grow with basis; shrink is undefined. Either
-document "no shrink, fixed widths win, overflow is silent" or extend
-the model. Decide explicitly; low priority until someone hits it.
+Single `Flex` conflates grow with basis and has no separate shrink factor.
+The current no-shrink behavior for fixed sizes and minima is documented in
+the README; overconstrained layouts may exceed the available area. A separate
+grow/shrink/basis model remains a design choice to make when needed.
 
 ---
 
