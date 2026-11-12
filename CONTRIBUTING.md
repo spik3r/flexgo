@@ -109,8 +109,9 @@ for the architectural tour.
 
 ## The CI checks (run them locally)
 
-CI runs the same six commands on every push/PR. Run them locally
-before pushing and you'll never be the one to break the build:
+CI runs these checks for pull requests, pushes to `main`, and tag pushes. A push
+to an ordinary feature branch does not run CI until you open a pull request.
+Run the checks locally before opening a pull request:
 
 ```bash
 gofmt -l .                    # nothing should print

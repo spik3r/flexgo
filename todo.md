@@ -57,8 +57,8 @@ Each of these warrants its own design discussion before coding.
   concrete.
 - 🧹 **`example/responsive`** — breakpoint switching based on
   terminal size.
-- 🧪 **Benchmark suite** — baseline before X1 so the refactor can
-  demonstrate no regression.
+- 🧪 **Benchmark suite** — the [Render baseline](docs/benchmarks.md) is in
+  place for comparison before X1; it does not set a timing threshold.
 
 ---
 

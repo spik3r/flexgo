@@ -1,6 +1,8 @@
 package flexgo
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -28,6 +30,10 @@ func TestValidateDetectsConflicts(t *testing.T) {
 		{"margin+margins", &Node{Margin: 1, Margins: Spacing{Top: 1}}, "Margin and Margins"},
 		{"negative flex", &Node{Flex: -1}, "negative Flex"},
 		{"negative width", &Node{Width: -1}, "negative Width"},
+		{"negative min width", &Node{MinWidth: -1}, "negative MinWidth"},
+		{"negative max width", &Node{MaxWidth: -1}, "negative MaxWidth"},
+		{"negative min height", &Node{MinHeight: -1}, "negative MinHeight"},
+		{"negative max height", &Node{MaxHeight: -1}, "negative MaxHeight"},
 		{"min>max width", &Node{MinWidth: 10, MaxWidth: 5}, "MinWidth"},
 		{"min>max height", &Node{MinHeight: 10, MaxHeight: 5}, "MinHeight"},
 	}
@@ -41,6 +47,110 @@ func TestValidateDetectsConflicts(t *testing.T) {
 				t.Fatalf("expected %q in error, got %q", tc.want, err.Error())
 			}
 		})
+	}
+}
+
+func TestValidateJoinsNegativeBoundsAcrossTree(t *testing.T) {
+	root := &Node{
+		MinWidth: -1,
+		MaxWidth: -2,
+		Children: []*Node{
+			{Name: "named", MinHeight: -3},
+			{MaxHeight: -4},
+			nil,
+		},
+	}
+	err := Validate(root)
+	if err == nil {
+		t.Fatal("expected joined diagnostics")
+	}
+	for _, want := range []string{
+		"root: negative MinWidth (-1)",
+		"root: negative MaxWidth (-2)",
+		"root.named: negative MinHeight (-3)",
+		"root.Children[1]: negative MaxHeight (-4)",
+		"root.Children[2]: nil node",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("missing %q in %q", want, err.Error())
+		}
+	}
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok || len(joined.Unwrap()) != 5 {
+		t.Fatalf("expected five joined diagnostics, got %v", err)
+	}
+}
+
+func TestValidateAllowsUnsetAndValidBounds(t *testing.T) {
+	if err := Validate(nil); err != nil {
+		t.Fatalf("nil root should be valid, got %v", err)
+	}
+	for _, node := range []*Node{
+		{MinWidth: 0, MaxWidth: 0, MinHeight: 0, MaxHeight: 0},
+		{MinWidth: 2, MaxWidth: 2, MinHeight: 1, MaxHeight: 3},
+		{MinWidth: 2, MaxHeight: 3},
+	} {
+		if err := Validate(node); err != nil {
+			t.Fatalf("valid bounds should pass: %+v: %v", node, err)
+		}
+	}
+}
+
+func TestValidateBoundInteractions(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	minInt := -maxInt - 1
+	cases := []struct {
+		name     string
+		min, max int
+		negative []string
+		order    bool
+	}{
+		{name: "negative min positive max", min: minInt, max: maxInt, negative: []string{"min"}},
+		{name: "positive min negative max", min: 1, max: minInt, negative: []string{"max"}},
+		{name: "both negative", min: -2, max: -1, negative: []string{"min", "max"}},
+		{name: "unset min", min: 0, max: 3},
+		{name: "unset max", min: 3, max: 0},
+		{name: "equal positive", min: 3, max: 3},
+		{name: "positive min above max", min: maxInt, max: 1, order: true},
+	}
+
+	for _, axis := range []string{"Width", "Height"} {
+		for _, tc := range cases {
+			t.Run(axis+"/"+tc.name, func(t *testing.T) {
+				node := &Node{}
+				if axis == "Width" {
+					node.MinWidth, node.MaxWidth = tc.min, tc.max
+				} else {
+					node.MinHeight, node.MaxHeight = tc.min, tc.max
+				}
+
+				var want []string
+				for _, bound := range tc.negative {
+					value := tc.min
+					if bound == "max" {
+						value = tc.max
+					}
+					want = append(want, fmt.Sprintf("root: negative %s%s (%d)", strings.ToUpper(bound[:1])+bound[1:], axis, value))
+				}
+				if tc.order {
+					want = append(want, fmt.Sprintf("root: Min%s (%d) > Max%s (%d)", axis, tc.min, axis, tc.max))
+				}
+
+				var got []string
+				if err := Validate(node); err != nil {
+					joined, ok := err.(interface{ Unwrap() []error })
+					if !ok {
+						t.Fatalf("expected joined diagnostics, got %T: %v", err, err)
+					}
+					for _, issue := range joined.Unwrap() {
+						got = append(got, issue.Error())
+					}
+				}
+				if !reflect.DeepEqual(got, want) {
+					t.Fatalf("diagnostics = %q, want %q", got, want)
+				}
+			})
+		}
 	}
 }
 
