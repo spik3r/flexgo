@@ -154,7 +154,7 @@ func (m model) tree() *flexgo.Node {
 	mode := "compact"
 	help, keys := "Enter/Tab: details", "Up/Down: move | q: quit"
 	if m.detail {
-		help, keys = "Tab/Esc: list", "Up/Down: scroll | q: quit"
+		help, keys = "Tab/Esc: list", "Up/Down scroll | q: quit"
 	}
 	if m.width >= wideWidth {
 		mode = "wide"
