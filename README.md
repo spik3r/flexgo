@@ -17,6 +17,13 @@ A larger reference app built on flexgo — three screens, tabbed scrollable pane
 
 > GIFs are generated from [`tapes/`](tapes/) using [vhs](https://github.com/charmbracelet/vhs).
 
+## Responsive screens
+
+The [responsive master/detail example](docs/responsive.md) switches between
+side-by-side and single-pane layouts while preserving selection, focus and
+scroll state. It includes a tiny-terminal fallback and tested resize/navigation
+flows for generated or hand-written TUIs. Run `go run ./example/responsive`.
+
 ## Installation
 
 ```bash
