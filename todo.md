@@ -55,8 +55,8 @@ Each of these warrants its own design discussion before coding.
 - 🧹 **`example/bubble_components`** — wrap `textinput`, `viewport`,
   `spinner` as `View` callbacks. Makes the BubbleTea value prop
   concrete.
-- 🧹 **`example/responsive`** — breakpoint switching based on
-  terminal size.
+- ✅ **`example/responsive`** — [responsive master/detail reference](docs/responsive.md)
+  with state-preserving breakpoints, bounded leaf output and navigation tests.
 - 🧪 **Benchmark suite** — the [Render baseline](docs/benchmarks.md) is in
   place for comparison before X1; it does not set a timing threshold.
 
