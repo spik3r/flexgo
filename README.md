@@ -24,6 +24,10 @@ side-by-side and single-pane layouts while preserving selection, focus and
 scroll state. It includes a tiny-terminal fallback and tested resize/navigation
 flows for generated or hand-written TUIs. Run `go run ./example/responsive`.
 
+For peer cards, [`layouts.AutoGrid`](docs/autogrid.md) reflows equal-width slots
+from its allocated content width, including inside nested layouts. Run
+`go run ./example/layouts/autogrid` or its builder equivalent.
+
 ## Installation
 
 ```bash

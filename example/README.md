@@ -38,6 +38,8 @@ Dedicated demos of the `MarginTopAuto` / `MarginBottomAuto` /
 | Path | Shows |
 |------|-------|
 | `layouts/headerbodyfooter` | `layouts.HeaderBodyFooter` 3-row shape |
+| `layouts/autogrid` | Width-driven card reflow with a tiny-terminal hint; [guide](../docs/autogrid.md) |
+| `builder/layouts/autogrid` | Equivalent AutoGrid frame via NodeBuilder |
 | `layouts/modal` | Scrollable body (j/k) + `layouts.Modal` overlay (space opens, esc closes) |
 
 ## `dynamic/`
