@@ -1,6 +1,185 @@
 package flexgo
 
-import "testing"
+import (
+	"math/big"
+	"reflect"
+	"testing"
+)
+
+// exactFlexSizes is a test oracle for positive flex-only children. It uses
+// unbounded integers, then applies distribute's leading-child remainder order.
+func exactFlexSizes(total int, weights ...int) []int {
+	sum := new(big.Int)
+	for _, weight := range weights {
+		sum.Add(sum, big.NewInt(int64(weight)))
+	}
+	sizes := make([]int, len(weights))
+	used := 0
+	for i, weight := range weights {
+		product := new(big.Int).Mul(big.NewInt(int64(total)), big.NewInt(int64(weight)))
+		sizes[i] = int(product.Div(product, sum).Int64())
+		used += sizes[i]
+	}
+	for rem, i := total-used, 0; rem > 0; rem, i = rem-1, (i+1)%len(sizes) {
+		sizes[i]++
+	}
+	return sizes
+}
+
+func TestDistributeLargePositiveFlexWeights(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	cases := []struct {
+		name    string
+		total   int
+		weights []int
+		want    []int
+	}{
+		{"sum overflow", 20, []int{maxInt, 1}, []int{20, 0}},
+		{"product overflow", 21, []int{maxInt / 4, maxInt / 8}, []int{15, 6}},
+		{"scaled ratio", 19, []int{maxInt / 3, maxInt / 6, maxInt / 6}, []int{10, 5, 4}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			children := make([]*Node, len(tc.weights))
+			for i, weight := range tc.weights {
+				children[i] = &Node{Flex: weight}
+			}
+			want := exactFlexSizes(tc.total, tc.weights...)
+			if !reflect.DeepEqual(want, tc.want) {
+				t.Fatalf("exact oracle = %v, hand-checked %v", want, tc.want)
+			}
+			for _, isRow := range []bool{true, false} {
+				if got := distribute(tc.total, children, isRow, 0); !reflect.DeepEqual(got, want) {
+					t.Errorf("isRow=%t: got %v, want %v", isRow, got, want)
+				}
+			}
+		})
+	}
+}
+
+func TestRenderLargePositiveFlexWeights(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	for _, isRow := range []bool{true, false} {
+		weights := []int{maxInt / 4, maxInt / 8}
+		got := make([]int, len(weights))
+		children := make([]*Node, len(weights))
+		for i, weight := range weights {
+			index := i
+			children[i] = &Node{Flex: weight, View: func(w, h int) string {
+				if isRow {
+					got[index] = w
+				} else {
+					got[index] = h
+				}
+				return "x"
+			}}
+		}
+		root := &Node{Dir: Col, Children: children}
+		if isRow {
+			root.Dir = Row
+		}
+		if isRow {
+			root.Render(21, 1)
+		} else {
+			root.Render(1, 21)
+		}
+		if want := exactFlexSizes(21, weights...); !reflect.DeepEqual(got, want) {
+			t.Errorf("isRow=%t: View allocations = %v, want %v", isRow, got, want)
+		}
+	}
+}
+
+func TestDistributeLargeFlexWithFixedAndGap(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	for _, isRow := range []bool{true, false} {
+		fixed := &Node{Width: 6, Height: 6}
+		children := []*Node{fixed, {Flex: maxInt}, {Flex: 1}}
+		// 30 - two 2-cell gaps - 6 fixed cells leaves 20 for MaxInt:1.
+		want := []int{6, 20, 0}
+		if got := distribute(30, children, isRow, 2); !reflect.DeepEqual(got, want) {
+			t.Errorf("isRow=%t: got %v, want %v", isRow, got, want)
+		}
+	}
+}
+
+func TestDistributeFlexOverflowKeepsExistingRules(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	cases := []struct {
+		name     string
+		children []*Node
+		want     []int
+	}{
+		{"ordinary remainder", []*Node{{Flex: 1}, {Flex: 2}}, []int{7, 13}},
+		{"zero uses unit weight", []*Node{{Flex: 0}, {Flex: 2}}, []int{7, 13}},
+		{"fixed width wins", []*Node{{Width: 6, Flex: maxInt}, {Flex: 1}}, []int{6, 14}},
+		{"fixed overflow does not shrink", []*Node{{Width: 15}, {Width: 15}, {Flex: maxInt}}, []int{15, 15, 0}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := distribute(20, tc.children, true, 0); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestDistributeBudgetArithmeticOverflow(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	cases := []struct {
+		name     string
+		total    int
+		gap      int
+		children []*Node
+		want     []int
+	}{
+		{"fixed sum overflow", 20, 0, []*Node{{Width: maxInt, Height: maxInt}, {Width: maxInt, Height: maxInt}, {Flex: 1}}, []int{maxInt, maxInt, 0}},
+		{"fixed sum overflow with gap", 20, 2, []*Node{{Width: maxInt, Height: maxInt}, {Width: maxInt, Height: maxInt}, {Flex: 1}}, []int{maxInt, maxInt, 0}},
+		{"gap product overflow", 20, maxInt, []*Node{{Flex: 1}, {Flex: 1}, {Flex: 1}}, []int{0, 0, 0}},
+		{"gap exceeds budget", 20, 11, []*Node{{Flex: 1}, {Flex: 1}, {Flex: 1}}, []int{0, 0, 0}},
+		{"zero budget with gap", 0, maxInt, []*Node{{Flex: 1}, {Flex: 1}}, []int{0, 0}},
+		{"negative budget keeps fixed", -1, 0, []*Node{{Width: maxInt, Height: maxInt}, {Width: maxInt, Height: maxInt}, {Flex: 1}}, []int{maxInt, maxInt, 0}},
+		{"fixed and gap leave one cell", maxInt, 1, []*Node{{Width: maxInt - 2, Height: maxInt - 2}, {Flex: 1}}, []int{maxInt - 2, 1}},
+		{"large gap leaves one cell for exact weights", maxInt, maxInt / 2, []*Node{{Flex: maxInt}, {Flex: 1}, {Flex: 1}}, []int{1, 0, 0}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, isRow := range []bool{true, false} {
+				if got := distribute(tc.total, tc.children, isRow, tc.gap); !reflect.DeepEqual(got, tc.want) {
+					t.Errorf("isRow=%t: got %v, want %v", isRow, got, tc.want)
+				}
+			}
+		})
+	}
+}
+
+func TestResolveMainAxisBudgetArithmeticOverflow(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	cases := []struct {
+		name     string
+		total    int
+		gap      int
+		children []*Node
+		want     []int
+	}{
+		{"gap product overflow with minimum", 20, maxInt, []*Node{{Flex: 1, MinWidth: 1, MinHeight: 1}, {Flex: 1}, {Flex: 1}}, []int{1, 0, 0}},
+		{"minimum sum overflow", 20, 0, []*Node{{Flex: 1, MinWidth: maxInt, MinHeight: maxInt}, {Flex: 1, MinWidth: maxInt, MinHeight: maxInt}, {Flex: 1}}, []int{maxInt, maxInt, 0}},
+		{"exact budget with minimum", 20, 2, []*Node{{Flex: 1, MinWidth: 8, MinHeight: 8}, {Flex: 1}, {Flex: 1}}, []int{8, 4, 4}},
+		{"over constrained minima", 20, 2, []*Node{{Flex: 1, MinWidth: 12, MinHeight: 12}, {Flex: 1, MinWidth: 12, MinHeight: 12}, {Flex: 1}}, []int{12, 12, 0}},
+		{"mixed fixed and minimum", 20, 2, []*Node{{Width: 6, Height: 6}, {Flex: 1, MinWidth: 8, MinHeight: 8}, {Flex: 1}}, []int{6, 8, 2}},
+		{"mixed fixed minimum and maximum", 30, 2, []*Node{{Width: 6, Height: 6}, {Flex: 1, MinWidth: 8, MinHeight: 8}, {Flex: 1, MaxWidth: 3, MaxHeight: 3}, {Flex: 1}}, []int{6, 8, 3, 7}},
+		{"maximum releases space", 20, 2, []*Node{{Flex: 1, MaxWidth: 2, MaxHeight: 2}, {Flex: 1}, {Flex: 1}}, []int{2, 7, 7}},
+		{"large exact boundary", maxInt, 1, []*Node{{Width: maxInt - 2, Height: maxInt - 2}, {Flex: 1, MinWidth: 1, MinHeight: 1}}, []int{maxInt - 2, 1}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, isRow := range []bool{true, false} {
+				if got := resolveMainAxisSizes(tc.total, tc.children, isRow, tc.gap); !reflect.DeepEqual(got, tc.want) {
+					t.Errorf("isRow=%t: got %v, want %v", isRow, got, tc.want)
+				}
+			}
+		})
+	}
+}
 
 func TestDistributeFixedChildren(t *testing.T) {
 	children := []*Node{

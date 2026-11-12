@@ -1,21 +1,31 @@
 package flexgo
 
+import "math/big"
+
+func contentBudget(total, gap, count int) int {
+	if gap > 0 && count > 1 && (total <= 0 || gap > total/(count-1)) {
+		return 0
+	}
+	return total - gap*(count-1)
+}
+
 func distribute(total int, children []*Node, isRow bool, gap int) []int {
 	n := len(children)
 	if n == 0 {
 		return nil
 	}
 
-	totalGap := gap * (n - 1)
-	available := total - totalGap
+	available := contentBudget(total, gap, n)
 
 	sizes := make([]int, n)
 
 	flexIndices := make([]int, 0, n)
 	flexValues := make([]int, n)
 
-	remaining := available
+	remaining := max(0, available)
 	totalFlex := 0
+	maxInt := int(^uint(0) >> 1)
+	exactFlex := false
 
 	for i, c := range children {
 		var fixed int
@@ -27,7 +37,11 @@ func distribute(total int, children []*Node, isRow bool, gap int) []int {
 
 		if fixed > 0 {
 			sizes[i] = fixed
-			remaining -= fixed
+			if fixed >= remaining {
+				remaining = 0
+			} else {
+				remaining -= fixed
+			}
 		} else {
 			flex := c.Flex
 			if flex == 0 {
@@ -35,21 +49,48 @@ func distribute(total int, children []*Node, isRow bool, gap int) []int {
 			}
 			flexValues[i] = flex
 			flexIndices = append(flexIndices, i)
-			totalFlex += flex
+			if !exactFlex {
+				if flex > 0 && totalFlex > maxInt-flex {
+					exactFlex = true
+				} else {
+					totalFlex += flex
+				}
+			}
 		}
 	}
 
-	for i := range children {
-		if sizes[i] > 0 {
-			continue
+	// Fixed sizes do not shrink when they exceed the available space.
+	if remaining <= 0 {
+		return sizes
+	}
+	if !exactFlex {
+		for _, i := range flexIndices {
+			if flexValues[i] > maxInt/remaining {
+				exactFlex = true
+				break
+			}
 		}
+	}
 
-		flex := flexValues[i]
-		size := (remaining * flex) / totalFlex
-		if size < 0 {
-			size = 0
+	if exactFlex && len(flexIndices) > 0 {
+		total := new(big.Int)
+		for _, i := range flexIndices {
+			total.Add(total, big.NewInt(int64(flexValues[i])))
 		}
-		sizes[i] = size
+		for _, i := range flexIndices {
+			product := new(big.Int).Mul(big.NewInt(int64(remaining)), big.NewInt(int64(flexValues[i])))
+			size := int(product.Quo(product, total).Int64())
+			if size > 0 {
+				sizes[i] = size
+			}
+		}
+	} else {
+		for _, i := range flexIndices {
+			size := (remaining * flexValues[i]) / totalFlex
+			if size > 0 {
+				sizes[i] = size
+			}
+		}
 	}
 
 	used := 0

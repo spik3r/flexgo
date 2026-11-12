@@ -90,7 +90,7 @@ Three ways to size a node:
 node.Width = 80
 node.Height = 24
 
-// Flex (fills remaining space, 0 = don't stretch)
+// Relative share of remaining space along the parent's main axis
 node.Flex = 1
 
 // Constraints
@@ -98,7 +98,21 @@ node.MinWidth = 10
 node.MaxWidth = 100
 ```
 
-When a container has `Flex > 0`, it expands to fill available space from its parent. Children within use their `Flex`, `Width`, or `Height` to determine their size.
+`Render(w, h)` supplies the root's available size; root `Flex` and min/max do
+not choose it. Positive root `Width` or `Height` can reduce its inner area after
+frame and margin space is reserved. For children of a `Row`, a positive `Width`
+takes precedence over `Flex`; for children of a `Col`, a positive `Height` does.
+A child without a positive fixed size on that axis uses its `Flex` value as a
+relative weight.
+`Flex: 0` defaults to weight 1 in this case.
+
+Min/max constraints can adjust child allocations; a child's own fixed sizing
+can still reduce the area passed to its `View`. Remaining space is
+redistributed among eligible children. Integer division gives leftover cells
+to earlier flexible children. If allocations retained after constraints exhaust
+the available space, other flexible children receive no additional share. The
+allocator does not shrink those sizes merely to fit, and rendering does not
+guarantee clipping to the parent's bounds.
 
 ### Justify (Main Axis)
 
@@ -239,31 +253,53 @@ page := flexgo.NewNode().
 
 ## Integration with BubbleTea
 
-flexgo integrates seamlessly with [BubbleTea](https://github.com/charmbracelet/bubbletea):
+With Bubble Tea v2, return a `tea.View` built from flexgo's rendered string:
 
 ```go
+package main
+
+import (
+	"log"
+
+	tea "charm.land/bubbletea/v2"
+	"github.com/spik3r/flexgo"
+)
+
 type model struct {
-    width  int
-    height int
-    page   *flexgo.Node
-    ready  bool
+	width  int
+	height int
+	page   *flexgo.Node
+	ready  bool
 }
+
+func (m model) Init() tea.Cmd { return nil }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-    switch msg := msg.(type) {
-    case tea.WindowSizeMsg:
-        m.width = msg.Width
-        m.height = msg.Height
-        m.ready = true
-    }
-    return m, nil
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		m.ready = true
+	case tea.KeyPressMsg:
+		if msg.String() == "q" || msg.String() == "ctrl+c" {
+			return m, tea.Quit
+		}
+	}
+	return m, nil
 }
 
-func (m model) View() string {
-    if !m.ready {
-        return "Loading..."
-    }
-    return m.page.Render(m.width, m.height)
+func (m model) View() tea.View {
+	if !m.ready {
+		return tea.NewView("Loading...")
+	}
+	return tea.NewView(m.page.Render(m.width, m.height))
+}
+
+func main() {
+	page := &flexgo.Node{View: func(w, h int) string { return "Hello" }}
+	if _, err := tea.NewProgram(model{page: page}).Run(); err != nil {
+		log.Fatal(err)
+	}
 }
 ```
 
@@ -322,7 +358,7 @@ cd example/layouts/tabs && go run main.go
 | CSS Flexbox      | flexgo           | Description                                    |
 |-----------------|------------------|------------------------------------------------|
 | `flex-direction` | `Dir`            | `Row` = row, `Col` = column                     |
-| `flex`          | `Flex`           | Growth factor (0 = fixed size)                  |
+| `flex`          | `Flex`           | Relative main-axis weight; 0 defaults to 1 without a positive fixed size on that axis |
 | `width/height`  | `Width/Height`   | Fixed dimensions                               |
 | `justify-content` | `Justify`       | Main axis alignment                            |
 | `align-items`    | `Align`          | Cross axis alignment                           |

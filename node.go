@@ -52,7 +52,8 @@ func (s Spacing) TotalHeight() int {
 // Precedence summary (callers should avoid setting both at once):
 //   - View vs Children: a node with Children is a container and View is
 //     ignored. A node with neither is a blank-space Spacer.
-//   - Flex vs Width/Height: the fixed dimension wins on its axis.
+//   - Flex vs Width/Height: a positive Width in a Row parent or Height in a
+//     Col parent wins for initial allocation; min/max may adjust that size.
 //   - Padding vs Paddings: if Paddings is non-zero, it is used and the
 //     Padding shorthand is ignored. Same for Margin vs Margins.
 //   - ShowBorder + Border: ShowBorder=true applies Border (or the
@@ -62,7 +63,9 @@ type Node struct {
 	Dir      Direction
 	Children []*Node // container: children render inside; View is ignored.
 
-	Flex   int // flex weight on the main axis; 0 = size by Width/Height.
+	// Flex is the relative main-axis weight used by a parent when no positive
+	// fixed size applies on that axis. A zero value defaults to weight 1.
+	Flex   int
 	Width  int // fixed; takes precedence over Flex on the horizontal axis.
 	Height int // fixed; takes precedence over Flex on the vertical axis.
 

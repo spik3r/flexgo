@@ -6,8 +6,9 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// Render is the public entry point. It renders the node tree into a string
-// fitting (w, h). Use this at the root of your layout.
+// Render lays out the root using (w, h) as its available size. Root Flex and
+// min/max do not select that size; content or overconstrained children may
+// extend beyond it.
 func (n *Node) Render(w, h int) string {
 	return n.render(w, h, nil)
 }

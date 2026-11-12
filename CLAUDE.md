@@ -62,9 +62,14 @@ Render(w, h)
 ### Key `Node` fields
 
 - `Dir` — `Row` or `Col`
-- `Flex` — flex weight (0 = fixed size)
-- `Width`, `Height` — fixed dimensions (used when `Flex == 0`)
-- `MinWidth`, `MaxWidth`, `MinHeight`, `MaxHeight` — constraints applied after distribution
+- `Flex` — relative main-axis weight for a child; 0 uses unit weight when no
+  positive fixed main-axis size applies
+- `Width`, `Height` — positive fixed dimensions take precedence over `Flex` on
+  the parent's main axis
+- `MinWidth`, `MaxWidth`, `MinHeight`, `MaxHeight` — adjust child allocations
+  after distribution; the child's own fixed sizing can still reduce its callback area
+- At the root, `Render(w, h)` uses the supplied size; root `Flex` and min/max
+  do not choose it
 - `Gap` — space between children
 - `Padding`, `Margin` — uniform spacing shorthands
 - `Paddings`, `Margins` — per-side spacing (`Spacing{Top, Right, Bottom, Left}`)
