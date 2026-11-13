@@ -82,3 +82,47 @@ func TestTabsShowTruncatedTitlesAndPlainUnderlines(t *testing.T) {
 		}
 	}
 }
+
+func TestMultilineTabTitlesCloseTerminalFormatting(t *testing.T) {
+	closeFormatting := "\x1b[m\x1b]8;;\x07"
+	for _, tc := range []struct{ name, open, close string }{
+		{"SGR", "\x1b[31m", "\x1b[0m"},
+		{"OSC8 BEL", "\x1b]8;;https://example.invalid\x07", "\x1b]8;;\x07"},
+		{"OSC8 ST", "\x1b]8;;https://example.invalid\x1b\\", "\x1b]8;;\x1b\\"},
+		{"SGR and OSC8", "\x1b[1;31m\x1b]8;;https://example.invalid\x07", "\x1b[m\x1b]8;;\x07"},
+	} {
+		for _, separator := range []string{"\n", "\r\n", "\r"} {
+			title := tc.open + "first" + separator + "second" + tc.close
+			t.Run(tc.name+separator, func(t *testing.T) {
+				got := tabTitle(title)
+				want := tc.open + "first…" + closeFormatting
+				if got != want {
+					t.Fatalf("raw title = %q, want %q", got, want)
+				}
+				for _, width := range []int{4, 12} {
+					root := Tabs(0, []Tab{{Title: title, Panel: func(w, h int) string { return "PANEL" }}, {Title: "OTHER"}})
+					header := root.Children[0].Children[0].Children[0].View(width, 1)
+					closing := strings.Index(header, closeFormatting)
+					if closing < 0 {
+						t.Fatalf("width %d lost raw closers: %q", width, header)
+					}
+					out := root.Render(30, 4)
+					other, panel := strings.Index(out, "OTHER"), strings.Index(out, "PANEL")
+					closing = strings.Index(out, closeFormatting)
+					if closing < 0 || other < closing || panel < closing {
+						t.Fatalf("formatting not closed before other content: %q", out)
+					}
+				}
+			})
+		}
+	}
+	for _, title := range []string{"plain\nsecond", "plain\rsecond"} {
+		if got := tabTitle(title); got != "plain…" {
+			t.Fatalf("plain title gained terminal escapes: %q", got)
+		}
+	}
+	single := "\x1b[31mone\x1b[m"
+	if got := tabTitle(single); got != single {
+		t.Fatalf("single line changed: %q", got)
+	}
+}

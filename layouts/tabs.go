@@ -84,6 +84,11 @@ func tabTitle(title string) string {
 	first, _, carriageReturn := strings.Cut(first, "\r")
 	if multiline || carriageReturn {
 		first += "…"
+		// The discarded lines may contain the original style/link closers.
+		// Close both before padding, neighboring tabs or panel output.
+		if ansi.Strip(first) != first {
+			first += ansi.ResetStyle + ansi.ResetHyperlink()
+		}
 	}
 	return first
 }

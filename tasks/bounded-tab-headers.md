@@ -37,3 +37,19 @@ used. Separate vet/build and interactive terminal checks are not claimed;
 those remain for hosted CI and review. Panels must still bound their own
 output, and a viewport shorter than the fixed two-row strip is not made into
 a scrolling layout. No publication occurred at this review checkpoint.
+
+## Independent review correction
+
+Independent review found that first-line truncation could discard SGR resets
+or OSC-8 hyperlink terminators on later lines. Multiline ANSI-bearing labels
+now close both style and hyperlink state after their visible ellipsis, before
+padding, neighboring tabs or panel output. Plain labels gain no escape bytes;
+single-line labels are unchanged. Raw-escape tests cover SGR, OSC-8 with BEL
+and ST terminators, combined styling/links and LF/CRLF/CR separators at full
+and narrow widths. They assert exact closing bytes, including placement before
+other content rather than relying only on stripped display width.
+
+After this correction, `go test -mod=readonly -race ./layouts . -count=1`
+passed again, including existing example goldens. Formatting and diff checks
+passed. The earlier separate vet/build and interactive-terminal limitations
+remain. This correction is local and requires independent re-review.

@@ -32,7 +32,9 @@ from its allocated content width, including inside nested layouts. Run
 
 `layouts.Tabs` keeps its title/underline strip to two rows. Long labels use an
 ellipsis within their allocated column; multiline labels show their first line
-with an ellipsis. ANSI styling and wide Unicode labels use terminal cell widths.
+with an ellipsis. Truncated multiline labels close their ANSI style and hyperlink
+state before neighboring content. ANSI styling and wide Unicode labels use
+terminal cell widths.
 The active panel keeps its allocation as labels grow or the terminal narrows.
 Panel callbacks still need to bound their own output.
 
