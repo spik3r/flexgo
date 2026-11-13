@@ -28,6 +28,16 @@ For peer cards, [`layouts.AutoGrid`](docs/autogrid.md) reflows equal-width slots
 from its allocated content width, including inside nested layouts. Run
 `go run ./example/layouts/autogrid` or its builder equivalent.
 
+## Layout diagnostics
+
+Call `flexgo.Validate(root)` before rendering a dynamically assembled tree to
+check conflicting fields, invalid bounds, nil children and child-reference
+cycles. Joined errors include the path to each problem. `flexgo.Inspect(root)`
+prints structural sizes and marks repeated ancestors as `<cycle>` without
+recursing into them. Shared acyclic subtrees are allowed and shown at each
+occurrence. Fix cycles before calling `Render`; rendering does not validate
+the tree automatically.
+
 ## Installation
 
 ```bash
