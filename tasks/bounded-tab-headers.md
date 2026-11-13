@@ -53,3 +53,13 @@ After this correction, `go test -mod=readonly -race ./layouts . -count=1`
 passed again, including existing example goldens. Formatting and diff checks
 passed. The earlier separate vet/build and interactive-terminal limitations
 remain. This correction is local and requires independent re-review.
+
+## Hosted module-consistency correction
+
+PR #10 CI run 43422932546 passed formatting but refused module consistency:
+this recipe directly imports the already pinned x/ansi v0.11.7, so its require
+entry must be direct. Applied the exact two-line go.mod move printed by hosted
+tidy. No version, go.sum byte, production source or test changed in this
+correction. No local go mod tidy or denied metadata-cache write was retried.
+The earlier source review remains tied to 667e63a; fresh CI on the corrected
+head is required before merge.
