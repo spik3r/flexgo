@@ -21,7 +21,9 @@ type FormRow struct {
 //
 //	[label (fixed width, right-aligned)] [field (flex)]
 //
-// Row height defaults to 1 when FormRow.Height is not set.
+// Row height defaults to 1 when FormRow.Height is not set. Labels keep at most
+// that many explicit lines and truncate each line to the label width with an
+// ellipsis, so they cannot wrap or displace subsequent rows.
 //
 // Customize (top 3 overrides):
 //   - root.Gap — vertical space between rows.
@@ -42,11 +44,14 @@ func Form(labelWidth int, rows []FormRow) *flexgo.Node {
 
 		labelView := func(text string) func(int, int) string {
 			return func(w, h int) string {
+				if w <= 0 || h <= 0 {
+					return ""
+				}
 				return lipgloss.NewStyle().
 					Width(w).
 					Height(h).
 					Align(lipgloss.Right, lipgloss.Center).
-					Render(text)
+					Render(boundedLabel(text, w, h))
 			}
 		}(labelText)
 
