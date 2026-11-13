@@ -12,6 +12,7 @@ import (
 // tree is well-formed.
 //
 // The checks cover the precedence rules documented on Node:
+//   - Cycles through Children (shared acyclic subtrees are allowed).
 //   - View and Children set together (container wins, View is ignored).
 //   - Padding and Paddings both non-zero (Paddings wins).
 //   - Margin and Margins both non-zero (Margins wins).
@@ -25,15 +26,22 @@ func Validate(root *Node) error {
 		return nil
 	}
 	var errs []error
-	validateNode(root, "root", &errs)
+	validateNode(root, "root", &errs, map[*Node]string{})
 	return errors.Join(errs...)
 }
 
-func validateNode(n *Node, path string, errs *[]error) {
+func validateNode(n *Node, path string, errs *[]error, ancestors map[*Node]string) {
 	if n == nil {
 		*errs = append(*errs, fmt.Errorf("%s: nil node", path))
 		return
 	}
+
+	if prior, ok := ancestors[n]; ok {
+		*errs = append(*errs, fmt.Errorf("%s: cycle to %s", path, prior))
+		return
+	}
+	ancestors[n] = path
+	defer delete(ancestors, n)
 
 	if n.View != nil && len(n.Children) > 0 {
 		*errs = append(*errs, fmt.Errorf("%s: View and Children both set; View is ignored", path))
@@ -80,7 +88,7 @@ func validateNode(n *Node, path string, errs *[]error) {
 		if child != nil && child.Name != "" {
 			childPath = fmt.Sprintf("%s.%s", path, child.Name)
 		}
-		validateNode(child, childPath, errs)
+		validateNode(child, childPath, errs, ancestors)
 	}
 }
 
@@ -91,17 +99,18 @@ func validateNode(n *Node, path string, errs *[]error) {
 //
 // Sizes shown are the structural values set on the Node, not the
 // post-layout allocated sizes — that requires the two-phase layout
-// (see X1 in todo.md).
+// (see X1 in todo.md). Cyclic child references are marked <cycle> and
+// are not descended into. Shared acyclic subtrees are shown at each occurrence.
 func Inspect(root *Node) string {
 	if root == nil {
 		return "<nil>\n"
 	}
 	var b strings.Builder
-	inspectNode(&b, root, "", true, true)
+	inspectNode(&b, root, "", true, true, map[*Node]bool{})
 	return b.String()
 }
 
-func inspectNode(b *strings.Builder, n *Node, prefix string, isLast, isRoot bool) {
+func inspectNode(b *strings.Builder, n *Node, prefix string, isLast, isRoot bool, ancestors map[*Node]bool) {
 	if n == nil {
 		b.WriteString(prefix)
 		b.WriteString("<nil>\n")
@@ -121,11 +130,17 @@ func inspectNode(b *strings.Builder, n *Node, prefix string, isLast, isRoot bool
 
 	b.WriteString(prefix)
 	b.WriteString(branch)
+	if ancestors[n] {
+		b.WriteString("<cycle>\n")
+		return
+	}
+	ancestors[n] = true
+	defer delete(ancestors, n)
 	b.WriteString(describeNode(n))
 	b.WriteByte('\n')
 
 	for i, child := range n.Children {
-		inspectNode(b, child, childPrefix, i == len(n.Children)-1, false)
+		inspectNode(b, child, childPrefix, i == len(n.Children)-1, false, ancestors)
 	}
 }
 
