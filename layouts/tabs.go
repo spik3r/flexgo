@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/spik3r/flexgo"
 )
@@ -17,7 +18,9 @@ type Tab struct {
 // Tabs builds a tab-strip plus active panel layout.
 //
 // The strip is two rows high (titles + underline). The active tab's
-// underline is centered under its title using AlignSelf.
+// underline is centered under its title using AlignSelf. Long titles are
+// truncated to their allocated column with an ellipsis. Multiline titles use
+// their first line with an ellipsis; the strip always keeps its two rows.
 //
 // Customize (top 3 overrides):
 //   - root.Children[0].Gap — space between tab titles on the strip.
@@ -36,10 +39,11 @@ func Tabs(active int, tabs []Tab) *flexgo.Node {
 
 	strip := make([]*flexgo.Node, 0, len(tabs))
 	for i, tab := range tabs {
+		title := tabTitle(tab.Title)
 		underlineText := " "
 		underlineWidth := 1
 		if i == active {
-			titleWidth := max(1, lipgloss.Width(tab.Title))
+			titleWidth := max(1, lipgloss.Width(title))
 			underlineText = strings.Repeat("-", titleWidth)
 			underlineWidth = titleWidth
 		}
@@ -48,8 +52,8 @@ func Tabs(active int, tabs []Tab) *flexgo.Node {
 			Flex: 1,
 			Dir:  flexgo.Col,
 			Children: []*flexgo.Node{
-				{Height: 1, View: centeredView(tab.Title)},
-				{Height: 1, Width: underlineWidth, AlignSelf: alignPtr(flexgo.AlignCenter), View: centeredView(underlineText)},
+				{Height: 1, View: tabHeaderView(title, "…")},
+				{Height: 1, Width: underlineWidth, AlignSelf: alignPtr(flexgo.AlignCenter), View: tabHeaderView(underlineText, "")},
 			},
 		})
 	}
@@ -62,4 +66,24 @@ func Tabs(active int, tabs []Tab) *flexgo.Node {
 			{Flex: 1, View: panel},
 		},
 	}
+}
+
+// Header callbacks cannot wrap: the strip reserves one row for each leaf.
+func tabHeaderView(text, tail string) func(int, int) string {
+	return func(w, h int) string {
+		if w <= 0 || h <= 0 {
+			return ""
+		}
+		return lipgloss.NewStyle().Width(w).MaxWidth(w).MaxHeight(1).
+			AlignHorizontal(lipgloss.Center).Render(ansi.Truncate(text, w, tail))
+	}
+}
+
+func tabTitle(title string) string {
+	first, _, multiline := strings.Cut(strings.ReplaceAll(title, "\r\n", "\n"), "\n")
+	first, _, carriageReturn := strings.Cut(first, "\r")
+	if multiline || carriageReturn {
+		first += "…"
+	}
+	return first
 }
