@@ -28,6 +28,16 @@ For peer cards, [`layouts.AutoGrid`](docs/autogrid.md) reflows equal-width slots
 from its allocated content width, including inside nested layouts. Run
 `go run ./example/layouts/autogrid` or its builder equivalent.
 
+## Tab labels in narrow layouts
+
+`layouts.Tabs` keeps its title/underline strip to two rows. Long labels use an
+ellipsis within their allocated column; multiline labels show their first line
+with an ellipsis. Truncated multiline labels close their ANSI style and hyperlink
+state before neighboring content. ANSI styling and wide Unicode labels use
+terminal cell widths.
+The active panel keeps its allocation as labels grow or the terminal narrows.
+Panel callbacks still need to bound their own output.
+
 ## Layout diagnostics
 
 Call `flexgo.Validate(root)` before rendering a dynamically assembled tree to
