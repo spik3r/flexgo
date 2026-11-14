@@ -144,7 +144,11 @@ func (m model) render() string {
 		{Height: 3, View: flexgo.ClipView(func(w, h int) string {
 			input := m.input
 			setInputWidth(&input, max(0, w-3))
-			return "Input (Tab to switch)\n" + input.View()
+			content := "Input (Tab to switch)\n" + input.View()
+			if input.Err != nil {
+				content += "\nError: " + input.Err.Error()
+			}
+			return content
 		})},
 		{Flex: 1, View: flexgo.ClipView(func(w, h int) string {
 			view := m.view
