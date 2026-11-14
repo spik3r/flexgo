@@ -57,7 +57,7 @@ func (s Spacing) TotalHeight() int {
 //   - Padding vs Paddings: if Paddings is non-zero, it is used and the
 //     Padding shorthand is ignored. Same for Margin vs Margins.
 //   - ShowBorder + Border: ShowBorder=true applies Border (or the
-//     lipgloss zero Border, effectively no visible frame). Debug adds
+//     lipgloss zero Border, which draws no frame and reserves no space). Debug adds
 //     a debug wrapper only when ShowBorder is false.
 type Node struct {
 	Dir      Direction

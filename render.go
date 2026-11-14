@@ -22,10 +22,11 @@ func (n *Node) render(w, h int, parentBg color.Color) string {
 	allocW := w
 	allocH := h
 
-	// Border and Debug both wrap the content. ShowBorder wins when both
-	// are set so we reserve exactly the space the outer wrapper will use.
+	// ShowBorder suppresses Debug even when its zero Border draws no frame.
+	// Reserve space only for the wrapper that will actually be rendered.
 	showDebugFrame := n.Debug && !hasExplicitBorder(n)
-	if hasExplicitBorder(n) || showDebugFrame {
+	showBorderFrame := hasExplicitBorder(n) && n.Border != (lipgloss.Border{})
+	if showBorderFrame || showDebugFrame {
 		w -= 2
 		h -= 2
 		if showDebugFrame {
@@ -92,7 +93,7 @@ func (n *Node) render(w, h int, parentBg color.Color) string {
 	}
 	inner = boxStyle.Render(inner)
 
-	if hasExplicitBorder(n) {
+	if showBorderFrame {
 		borderStyle := lipgloss.NewStyle().Border(n.Border)
 		if n.BorderForeground != nil {
 			borderStyle = borderStyle.BorderForeground(n.BorderForeground)
