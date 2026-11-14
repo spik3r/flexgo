@@ -237,6 +237,16 @@ open", "what keys exist". Each screen model owns its own state:
 ScanScreen holds four viewport offsets, a file cursor, the currently
 opened file; HistoryScreen holds the run cursor and detail offset.
 
+Empty Files and History lists keep a neutral cursor at zero. Navigation and
+Open on an empty list do not invent a selection; Files shows `(no files)` and
+History shows `(no history)`. If sample data is replaced with an empty or shorter
+list, the next list interaction reconciles the cursor to a valid item. Rendering
+uses the same bounded selection without changing stored data. History resets its detail
+offset when reconciling a stale cursor, and both screens discard stale list
+scroll when their list becomes empty. An already opened synthetic file remains
+viewable until Close, even if the list changes behind it. Live applications
+should reconcile stable IDs when results reorder; this demo uses indices.
+
 ### Screen-to-screen data flow is one-way
 
 When you press `2` to jump from Launcher to Scan, `App.Update` reads

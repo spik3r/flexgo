@@ -90,6 +90,10 @@ func (s ScanScreen) Update(msg tea.KeyPressMsg, keys KeyMap) ScanScreen {
 		return s
 	}
 
+	s.filesCursor = max(0, min(s.filesCursor, len(s.files)-1))
+	if len(s.files) == 0 {
+		s.viewports[3] = ViewportState{}
+	}
 	switch {
 	case Matches(key, keys.Next):
 		s.activeTab = (s.activeTab + 1) % len(s.tabNames)
@@ -123,10 +127,10 @@ func (s ScanScreen) Update(msg tea.KeyPressMsg, keys KeyMap) ScanScreen {
 	case Matches(key, keys.Bottom):
 		s.viewports[s.activeTab].Offset = s.contentLen()
 		if s.activeTab == 3 {
-			s.filesCursor = len(s.files) - 1
+			s.filesCursor = max(0, len(s.files)-1)
 		}
 	case Matches(key, keys.Open):
-		if s.activeTab == 3 && s.filesCursor < len(s.files) {
+		if s.activeTab == 3 && len(s.files) > 0 {
 			s.openedPath = strings.TrimSpace(s.files[s.filesCursor])
 			s.openedBody = fakeFileBody(s.openedPath)
 			s.viewports[3] = ViewportState{}
