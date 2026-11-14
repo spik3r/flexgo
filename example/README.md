@@ -46,12 +46,19 @@ Dedicated demos of the `MarginTopAuto` / `MarginBottomAuto` /
 
 Flagship interactive demo — reactive BubbleTea app using the raw API.
 
+## `bubble_components/`
+
+[Bubbles integration guide](bubble_components/README.md): text input, viewport and
+spinner composed as bounded Flexgo leaf views. Demonstrates focus routing,
+state-preserving resize, cursor commands and scrolling.
+
 ## Running
 
 ```bash
 go run ./example/basics/basic
 go run ./example/layouts/modal
 go run ./example/dynamic
+go run ./example/bubble_components
 ```
 
 ## Golden snapshot mode

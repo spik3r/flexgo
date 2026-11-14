@@ -53,9 +53,9 @@ Each of these warrants its own design discussion before coding.
 
 ## Priority 3 — Examples & infrastructure
 
-- 🧹 **`example/bubble_components`** — wrap `textinput`, `viewport`,
-  `spinner` as `View` callbacks. Makes the BubbleTea value prop
-  concrete.
+- ✅ **`example/bubble_components`** — [Bubbles integration](example/bubble_components/README.md)
+  with bounded leaf views, focus routing, cursor/scroll retention and resize tests.
+  Interactive terminal fidelity remains qualified by the guide's renderer limitation.
 - ✅ **`example/responsive`** — [responsive master/detail reference](docs/responsive.md)
   with state-preserving breakpoints, bounded leaf output and navigation tests.
 - 🧪 **Benchmark suite** — the [Render baseline](docs/benchmarks.md) is in
