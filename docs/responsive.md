@@ -56,6 +56,10 @@ shrinking again restores the previous scroll intent. The next scroll key starts
 from the currently visible offset. Changing records intentionally resets it.
 The list's visible start is derived from selection and available height, so
 selection stays on screen after a shrink without a second persistent list offset.
+Each record occupies one list row: only the first line of its title is shown,
+clipped to the available cells. Tabs become four spaces; CRLF and CR are line
+breaks. Title styles and hyperlinks close before the next record. The stored
+title and detail content remain unchanged.
 
 ## Applying this to generated or hand-written apps
 
