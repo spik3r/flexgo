@@ -33,6 +33,7 @@ var exampleGoldens = []string{
 	"builder/layouts/modal",
 	"builder/layouts/splitpane",
 	"builder/layouts/tabs",
+	"bubble_components",
 	"dynamic",
 	"responsive",
 	"layouts/dashboard",
