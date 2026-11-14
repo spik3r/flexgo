@@ -145,6 +145,36 @@ the available space, other flexible children receive no additional share. The
 allocator does not shrink those sizes merely to fit, and rendering does not
 guarantee clipping to the parent's bounds.
 
+### Bound leaf content
+
+Wrap a text callback with `ClipView` when it must fit its allocation:
+
+```go
+view := flexgo.ClipView(func(w, h int) string {
+    return "A long first line\nA second line\nA third line"
+})
+node := &flexgo.Node{View: view}
+// Builder equivalent: flexgo.NewNode().View(view).Build()
+fmt.Println(node.Render(12, 2))
+```
+
+`ClipView` keeps the first `h` lines and first `w` terminal cells per line. It
+neither wraps nor adds padding or ellipsis. Wide characters and grapheme clusters
+stay whole. Tabs become four spaces; CRLF and CR become newlines. SGR styles and
+OSC-8 links carry across retained lines and close before adjacent content.
+Short plain text and intentional blank lines remain unchanged.
+
+The original callback runs once with its supplied content dimensions, or not at
+all when either dimension is nonpositive. A nil callback produces empty output.
+The adapter stores no render state; application state still belongs to the caller.
+Both [AutoGrid examples](example/layouts/autogrid) and the
+[responsive example](example/responsive) use it.
+
+This bounds the callback's text only. Borders, padding, gaps and fixed or minimum
+sizes can still exceed the available area. Callbacks containing arbitrary terminal
+cursor-control sequences are outside the text geometry guarantee. Existing
+callbacks keep their current overflow behavior unless wrapped.
+
 ### Justify (Main Axis)
 
 Controls where children are placed along the main axis when there is remaining space:

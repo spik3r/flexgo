@@ -38,6 +38,7 @@ The core library lives in these files at the module root:
 | `render_helpers.go` | Shared layout/paint helpers (`resolveSpacing`, `resolveMainAxisSizes`, `join`, `asymmetricMargin`, etc.). |
 | `align.go` | `applyAlign` — cross-axis alignment wrapper over lipgloss. |
 | `builder.go` | `NodeBuilder` fluent API mirroring `Node`'s public fields. |
+| `clip_view.go` | `ClipView` — opt-in text callback bounds; no renderer sizing changes. |
 | `inspect.go` | `Validate(root) error` and `Inspect(root) string` diagnostics. |
 
 The `layouts/` sub-package provides ready-made recipes (one file per

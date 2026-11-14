@@ -39,7 +39,8 @@ grow/shrink/basis model remains a design choice to make when needed.
 - 🎨 **`flexgo.Place()`** — absolute positioning (tooltips, floating
   panels), port of lipgloss `Place`.
 - 🎨 **`Overflow`** — `OverflowClip` / `OverflowEllipsis` for text
-  that exceeds its box. Currently overflow is silent.
+  that exceeds its box. `ClipView` now offers opt-in clipping for leaf callbacks;
+  node-level overflow policy remains a separate design choice.
 - 🎨 **Percentage sizes** — `Width: "50%"` alt to flex. Requires
   parsing; maybe overkill.
 - 🎨 **Theme** — named colours a recipe references; palettes
