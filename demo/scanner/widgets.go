@@ -509,6 +509,8 @@ func padLineBg(line string, w int, bg, fg color.Color) string {
 }
 
 func truncateToWidth(s string, w int) string {
+	// Match Lipgloss tab expansion before clipping and computing background padding.
+	s = strings.ReplaceAll(s, "\t", "    ")
 	if lipgloss.Width(s) <= w {
 		return s
 	}
