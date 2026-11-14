@@ -47,3 +47,23 @@ closures in raw output. Interactive terminal behavior is unverified. Local
 `go mod tidy` was deliberately not run because of the prior denied metadata-cache
 operation. No dependency manifests, versions, sums or golden files changed.
 No listener, deployment, push or merge was performed for this assignment.
+
+## Review correction: tab expansion
+
+Independent review identified that ANSI width measurement treats tabs as zero
+cells while Lipgloss replaces each tab with four spaces before wrapping. A new
+synthetic regression reproduced callback and full-layout overflow with `A\tB`,
+leading/repeated tabs, CJK, SGR, OSC-8 and multiline input at narrow widths.
+The test failed on 5d9367108c071f4054e83e1b9248ba2fc1906833 before the correction.
+
+`boundedLabel` now performs Lipgloss's four-space tab expansion before measuring
+and truncating. Tests cover callback bounds, full modal body/form row placement,
+and exact visible expansion when enough width exists. No change to Tabs or core
+rendering is included.
+
+With the same offline/read-only Go flags and existing build cache listed above,
+`go test -mod=readonly -race ./... -count=1` and `go vet -mod=readonly ./...`
+both passed after the correction. Formatting/diff checks passed. Disk had 39 GiB
+available before validation. Build/tidy were not rerun, respecting the prior
+blocked metadata-cache operation. Interactive terminal checks remain unrun.
+The revised exact head requires independent review before publication.

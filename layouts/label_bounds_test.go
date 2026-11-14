@@ -107,3 +107,37 @@ func TestClippedLabelsCloseFormattingBeforeOtherContent(t *testing.T) {
 		}
 	}
 }
+
+func TestRecipeLabelsExpandTabsBeforeTruncating(t *testing.T) {
+	for _, text := range []string{"A\tB", "\t\tB", "界\tB", "\x1b[31mA\tB\x1b[m", "\x1b]8;;https://example.invalid\x07A\tB\x1b]8;;\x07", "A\tB\nnext"} {
+		modal := Modal(text, nil, 5, 6, nil).Children[0]
+		label := Form(3, []FormRow{{Label: text}}).Children[0].Children[0]
+		for _, leaf := range []*flexgo.Node{modal, label} {
+			for _, width := range []int{1, 2, 3, 5, 12} {
+				got := leaf.View(width, 1)
+				if lipgloss.Width(got) > width || lipgloss.Height(got) != 1 || strings.Contains(got, "\t") {
+					t.Errorf("label %q at width %d escaped one row: %q", text, width, got)
+				}
+			}
+		}
+		dialog := Modal(text, func(w, h int) string { return "B" }, 5, 6, nil).Render(5, 6)
+		if lipgloss.Width(dialog) != 5 || lipgloss.Height(dialog) != 6 || !strings.Contains(strings.Split(dialog, "\n")[2], "B") {
+			t.Errorf("tab displaced modal body: %q", dialog)
+		}
+		form := Form(3, []FormRow{{Label: text, Field: func(w, h int) string { return "F" }}, {Label: "N", Field: func(w, h int) string { return "N" }}}).Render(9, 2)
+		if lipgloss.Width(form) != 9 || lipgloss.Height(form) != 2 || !strings.Contains(strings.Split(form, "\n")[1], "N") {
+			t.Errorf("tab displaced form rows: %q", form)
+		}
+	}
+	for _, tc := range []struct {
+		text string
+		w    int
+		want string
+	}{
+		{"A\tB", 3, "A …"}, {"A\tB", 6, "A    B"}, {"\tB", 3, "  …"},
+	} {
+		if got := boundedLabel(tc.text, tc.w, 1); got != tc.want {
+			t.Errorf("tab normalization %q: got %q want %q", tc.text, got, tc.want)
+		}
+	}
+}

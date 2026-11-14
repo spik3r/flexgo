@@ -11,6 +11,9 @@ func boundedLabel(text string, w, h int) string {
 	if w <= 0 || h <= 0 {
 		return ""
 	}
+	// Lipgloss expands each tab to four spaces before wrapping. Measure the
+	// same visible text so that expansion cannot invalidate the width limit.
+	text = strings.ReplaceAll(text, "\t", "    ")
 	lines := strings.Split(strings.ReplaceAll(strings.ReplaceAll(text, "\r\n", "\n"), "\r", "\n"), "\n")
 	if len(lines) > h {
 		lines = lines[:h]
