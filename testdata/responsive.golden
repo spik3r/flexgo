@@ -8,5 +8,5 @@ Responsive records | wide
   Record 06              Detail line 03: record 01                              
   Record 07              Detail line 04: record 01                              
   Record 08              Detail line 05: record 01                              
-Tab/Enter: detail | Esc: list                                                   
-Up/Down: move/scroll | q: quit                                                  
+Tab/Enter: detail | Esc: list | q: quit                                         
+Up/Down: move/scroll | PgUp/PgDn: page | Home/End: first/last                   
