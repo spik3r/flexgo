@@ -15,6 +15,11 @@ windows show the required size and, where space permits, the quit key. Editing,
 paste, focus changes and scrolling pause while their controls are hidden; Esc
 and Ctrl+C still quit. Resize back to continue at the same input cursor, focus
 and scroll position (subject to viewport clamping). Spinner updates continue.
+Clipboard or input-validation errors appear below the text input, within its
+existing third row. Correcting the input or completing a successful paste clears
+the feedback when Bubbles clears its error state. Long messages are clipped to
+one row; they do not displace the viewport or quit controls.
+
 The input cursor's command chain restarts when its focused control becomes
 visible again. Spinner and input cursor updates use `tea.Cmd`.
 
@@ -51,7 +56,9 @@ of the component for rendering, then use `flexgo.ClipView` to bound its output:
 Rendering must not update the stored input value, cursor, focus or scroll offset.
 `ClipView` bounds text; the application still chooses a layout whose fixed rows
 fit. This example reserves three input rows and one footer row, then gives the
-remaining height to the viewport.
+remaining height to the viewport. Render `input.Err` alongside `input.View()`;
+the view string alone does not expose clipboard or validation failures. Keep
+Bubbles as the owner of that error state rather than caching a second copy.
 
 ## Verification and limits
 
