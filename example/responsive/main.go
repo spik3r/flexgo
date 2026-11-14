@@ -106,6 +106,9 @@ func text(s string) func(int, int) string {
 }
 
 func (m model) listView(w, h int) string {
+	if w <= 0 || h <= 0 {
+		return ""
+	}
 	if len(m.records) == 0 {
 		return fit([]string{"No records"}, w, h)
 	}
@@ -117,9 +120,9 @@ func (m model) listView(w, h int) string {
 		if i == m.selected {
 			prefix = "> "
 		}
-		lines = append(lines, prefix+m.records[i].title)
+		lines = append(lines, fit([]string{prefix + m.records[i].title}, w, 1))
 	}
-	return fit(lines, w, h)
+	return strings.Join(lines, "\n")
 }
 
 func (m model) detailView(w, h int) string {
