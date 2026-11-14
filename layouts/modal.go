@@ -13,7 +13,8 @@ import (
 // (w, h) the dialog floats in the middle with spare space around it.
 //
 // Layout: a one-row bold title, then the body fills the remaining
-// height. Both the title's fill area and the modal's border area are
+// height. Long titles are truncated with an ellipsis; multiline titles use
+// only their first line. Both the title's fill area and the modal's border area are
 // painted with bg so the dialog has a single consistent backdrop —
 // pass nil for terminal-default.
 //
@@ -35,6 +36,9 @@ func Modal(
 	bg color.Color,
 ) *flexgo.Node {
 	titleView := func(w, h int) string {
+		if w <= 0 || h <= 0 {
+			return ""
+		}
 		style := lipgloss.NewStyle().
 			Width(w).
 			Height(h).
@@ -43,7 +47,7 @@ func Modal(
 		if bg != nil {
 			style = style.Background(bg)
 		}
-		return style.Render(title)
+		return style.Render(boundedLabel(title, w, 1))
 	}
 	return &flexgo.Node{
 		MarginTopAuto:    true,
