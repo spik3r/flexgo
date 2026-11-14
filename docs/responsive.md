@@ -26,7 +26,11 @@ should choose them from its content and minimum useful controls.
 5. Select another record: its detail starts at the top. Press `q` to quit.
 
 `Up`/`Down` (or `k`/`j`) move the selection when the list is active, or scroll
-when details are active. `Tab` toggles active pane, `Enter` selects details,
+when details are active. `PgUp`/`PgDn` move one visible content page in the
+active pane. `Home`/`End` select the first/last record or scroll to the first/last
+detail page. Movement stops at the boundary; an unchanged list selection keeps
+its remembered detail offset. Page size follows the current terminal height.
+`Tab` toggles active pane, `Enter` selects details,
 `Esc` selects the list, and `q`/`ctrl+c` quit. The `*` marks the active pane.
 
 ## State survives; the layout changes
@@ -97,7 +101,8 @@ FLEXGO_GOLDEN=1 go run ./example/responsive
 
 The tests cover breakpoint boundaries, zero/negative/tiny sizes, output bounds,
 Unicode cell clipping, wide → compact → tiny → wide state retention, repeated
-Back/Enter/Tab flows, empty data and scroll/selection limits. The deterministic
+Back/Enter/Tab flows, page and boundary navigation, empty data and
+scroll/selection limits. The deterministic
 80×12 golden covers the wide screen without opening a TTY.
 
 The synthetic data and allocation limits are deliberate. This is not an input

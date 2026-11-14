@@ -68,19 +68,35 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(m.records) > 0 {
 				m.detail = !m.detail
 			}
-		case "up", "k":
-			if m.detail {
-				m.offset = max(0, m.visibleOffset()-1)
-			} else if m.selected > 0 {
-				m.selected--
-				m.offset = 0
+		case "up", "k", "down", "j", "pgup", "pgdown", "home", "end":
+			if len(m.records) == 0 {
+				break
 			}
-		case "down", "j":
-			if m.detail && len(m.records) > 0 {
-				m.offset = min(m.visibleOffset()+1, max(0, len(m.records[m.selected].lines)-(m.height-4)))
-			} else if m.selected+1 < len(m.records) {
-				m.selected++
-				m.offset = 0
+			position, last := m.selected, len(m.records)-1
+			page := m.height - 4
+			if m.detail {
+				position = m.visibleOffset()
+				last = max(0, len(m.records[m.selected].lines)-page)
+			}
+			switch key {
+			case "up", "k":
+				position--
+			case "down", "j":
+				position++
+			case "pgup":
+				position -= page
+			case "pgdown":
+				position += page
+			case "home":
+				position = 0
+			case "end":
+				position = last
+			}
+			position = max(0, min(position, last))
+			if m.detail {
+				m.offset = position
+			} else if position != m.selected {
+				m.selected, m.offset = position, 0
 			}
 		}
 	}
@@ -149,13 +165,13 @@ func (m model) tree() *flexgo.Node {
 	detail := m.pane("Details", m.detail, m.detailView)
 	body := list
 	mode := "compact"
-	help, keys := "Enter/Tab: details", "Up/Down: move | q: quit"
+	help, keys := "Tab: details | q: quit", "↑↓ PgUp/PgDn Home/End"
 	if m.detail {
-		help, keys = "Tab/Esc: list", "Up/Down scroll | q: quit"
+		help = "Tab/Esc: list | q: quit"
 	}
 	if m.width >= wideWidth {
 		mode = "wide"
-		help, keys = "Tab/Enter: detail | Esc: list", "Up/Down: move/scroll | q: quit"
+		help, keys = "Tab/Enter: detail | Esc: list | q: quit", "Up/Down: move/scroll | PgUp/PgDn: page | Home/End: first/last"
 		list.Width = sidebarWidth
 		body = &flexgo.Node{Dir: flexgo.Row, Flex: 1, Gap: 1, Children: []*flexgo.Node{list, detail}}
 	} else if m.detail {
