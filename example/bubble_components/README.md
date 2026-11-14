@@ -11,15 +11,22 @@ spinner. All content is synthetic and local. It starts with the input focused:
 - Press Esc or Ctrl+C to quit from either focus.
 
 At 20 columns and 5 rows, the footer still shows `Esc:quit Tab:focus`. Smaller
-windows show a resize hint while retaining the component state. Resize back to
-continue editing or scrolling. Spinner and input cursor updates use `tea.Cmd`.
+windows show the required size and, where space permits, the quit key. Editing,
+paste, focus changes and scrolling pause while their controls are hidden; Esc
+and Ctrl+C still quit. Resize back to continue at the same input cursor, focus
+and scroll position (subject to viewport clamping). Spinner updates continue.
+The input cursor's command chain restarts when its focused control becomes
+visible again. Spinner and input cursor updates use `tea.Cmd`.
 
 ## Copy the integration pattern
 
 Keep component models on the application model. Route keys and paste by focus in
 `Update`; pass spinner ticks and cursor messages to their components. Start both
 the spinner and focused input cursor from `Init`. Return the command from `Focus` to
-Bubble Tea when switching back from the viewport.
+Bubble Tea when switching back from the viewport. Use the same visibility guard
+for key routing and other component messages: paste and asynchronous input can
+arrive outside the key handler. If cursor messages are paused while hidden,
+restart the focused cursor command when the layout becomes usable again.
 
 Window-size messages update the stored viewport dimensions so scrolling clamps to
 the current visible height. The input width reserves two cells for the prompt
