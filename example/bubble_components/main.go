@@ -12,6 +12,11 @@ import (
 	"github.com/spik3r/flexgo"
 )
 
+const (
+	minWidth  = 20
+	minHeight = 5
+)
+
 type model struct {
 	input    textinput.Model
 	view     viewport.Model
@@ -60,16 +65,29 @@ func (m model) Init() tea.Cmd {
 	return tea.Batch(m.spinner.Tick, m.focusCmd)
 }
 
+func (m model) usable() bool { return m.ready && m.width >= minWidth && m.height >= minHeight }
+
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
+		wasUsable := m.usable()
 		m.resize(msg.Width, msg.Height)
 		m.ready = true
+		if !wasUsable && m.usable() && m.input.Focused() {
+			// Cursor messages are paused while hidden; resume their command chain.
+			cmd := m.input.Focus()
+			return m, cmd
+		}
 		return m, nil
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
 			return m, tea.Quit
+		}
+		if !m.usable() {
+			return m, nil
+		}
+		switch msg.String() {
 		case "tab", "shift+tab":
 			if m.input.Focused() {
 				m.input.Blur()
@@ -89,6 +107,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	default:
+		if !m.usable() {
+			return m, nil
+		}
 		// Cursor and mouse messages belong to their respective components.
 		var cmd tea.Cmd
 		m.input, cmd = m.input.Update(msg)
@@ -107,15 +128,15 @@ func (m model) render() string {
 	if m.width == 0 || m.height == 0 {
 		return ""
 	}
-	if m.width < 20 || m.height < 5 {
-		line := "Terminal too small"
-		if len(line) > m.width {
-			line = line[:m.width]
-		}
+	if !m.usable() {
+		hints := []string{fmt.Sprintf("Resize to %dx%d", minWidth, minHeight), "Esc:quit"}
 		rows := make([]string, m.height)
-		rows[0] = line + strings.Repeat(" ", m.width-len(line))
-		for i := 1; i < len(rows); i++ {
-			rows[i] = strings.Repeat(" ", m.width)
+		for i := range rows {
+			line := ""
+			if i < len(hints) {
+				line = hints[i][:min(len(hints[i]), m.width)]
+			}
+			rows[i] = line + strings.Repeat(" ", m.width-len(line))
 		}
 		return strings.Join(rows, "\n")
 	}
