@@ -31,6 +31,13 @@ func (h HistoryScreen) Footer() string {
 
 func (h HistoryScreen) Update(msg tea.KeyPressMsg, keys KeyMap) HistoryScreen {
 	key := msg.String()
+	cursor := max(0, min(h.cursor, len(h.results)-1))
+	if cursor != h.cursor || len(h.results) == 0 {
+		h.cursor, h.detail = cursor, ViewportState{}
+	}
+	if len(h.results) == 0 {
+		return h
+	}
 	switch {
 	case Matches(key, keys.Up), Matches(key, keys.Prev):
 		if h.cursor > 0 {
@@ -90,7 +97,7 @@ func (h HistoryScreen) sidebarView() func(int, int) string {
 			line := fmt.Sprintf("  %s  (%d)", r.ID, r.Findings)
 			bg := colPanel
 			fg := colText
-			if i == h.cursor {
+			if i == max(0, min(h.cursor, len(h.results)-1)) {
 				bg = colSelected
 				fg = colHighlight
 			}
@@ -112,10 +119,7 @@ func (h HistoryScreen) detailLines() []string {
 	if len(h.results) == 0 {
 		return []string{"(no history)"}
 	}
-	idx := h.cursor
-	if idx >= len(h.results) {
-		idx = len(h.results) - 1
-	}
+	idx := max(0, min(h.cursor, len(h.results)-1))
 	r := h.results[idx]
 	out := []string{
 		"Run:        " + r.ID,

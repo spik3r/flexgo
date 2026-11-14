@@ -327,8 +327,9 @@ func scrollIndicator(offset, maxOffset, h int) string {
 // filetree is a list with a cursor — enough to demonstrate the
 // pattern; swap for a real tree widget when you need expand/collapse.
 func filetreeView(lines []string, cursor int) func(w, h int) string {
+	cursor = max(0, min(cursor, len(lines)-1))
 	return func(w, h int) string {
-		if h <= 0 {
+		if h <= 0 || w <= 0 {
 			return ""
 		}
 		offset := 0
@@ -341,6 +342,8 @@ func filetreeView(lines []string, cursor int) func(w, h int) string {
 			var line string
 			if idx < len(lines) {
 				line = lines[idx]
+			} else if len(lines) == 0 && i == 0 {
+				line = "(no files)"
 			}
 			bg := colBg
 			fg := colText
