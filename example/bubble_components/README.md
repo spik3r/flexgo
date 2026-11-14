@@ -22,8 +22,10 @@ the spinner and focused input cursor from `Init`. Return the command from `Focus
 Bubble Tea when switching back from the viewport.
 
 Window-size messages update the stored viewport dimensions so scrolling clamps to
-the current visible height. The input width excludes its two-cell prompt. The
-pinned Bubbles input does not recompute an interior cursor's visible window on
+the current visible height. The input width reserves two cells for the prompt
+and one for the virtual cursor, so clipping cannot hide the cursor at the end
+of a full input. The pinned Bubbles input does not recompute an interior
+cursor's visible window on
 `SetWidth`, so `setInputWidth` rebuilds it using public cursor methods and restores
 the original cursor position.
 

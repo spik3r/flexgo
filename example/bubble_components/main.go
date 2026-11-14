@@ -42,7 +42,7 @@ func initialModel() model {
 
 func (m *model) resize(w, h int) {
 	m.width, m.height = max(0, w), max(0, h)
-	setInputWidth(&m.input, max(0, m.width-2)) // The prompt occupies two columns.
+	setInputWidth(&m.input, max(0, m.width-3)) // Two prompt cells plus the virtual cursor cell.
 	m.view.SetWidth(m.width)
 	m.view.SetHeight(max(0, m.height-4)) // Three input rows and one status row.
 	m.view.SetYOffset(m.view.YOffset())
@@ -122,7 +122,7 @@ func (m model) render() string {
 	root := &flexgo.Node{Dir: flexgo.Col, Children: []*flexgo.Node{
 		{Height: 3, View: flexgo.ClipView(func(w, h int) string {
 			input := m.input
-			setInputWidth(&input, max(0, w-2))
+			setInputWidth(&input, max(0, w-3))
 			return "Input (Tab to switch)\n" + input.View()
 		})},
 		{Flex: 1, View: flexgo.ClipView(func(w, h int) string {

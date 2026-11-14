@@ -81,3 +81,21 @@ Local build/tidy and interactive terminal acceptance remain unrun. No denied
 operation was retried. Hosted dependency tidy/build/race and independent review
 remain required gates before merge. The example guide records the existing
 upstream combining-mark limitation instead of claiming terminal fidelity.
+
+## Independent review correction
+
+The first exact-head review of `24db9be` reproduced an omitted cursor-cell
+reservation. At width 20 with 18 characters and the cursor at the end, the raw
+row retained cursor style escapes but no painted cursor space. The new
+`TestInputCursorSurvivesBoundsAndResize` failed on this case before correction.
+Both stored resize sizing and the render-copy sizing now reserve two prompt
+cells plus one virtual-cursor cell. The guide and width assertion agree.
+
+The new test checks one painted cursor cell, logical value and cursor position
+across 144 combinations of width, text length, start/interior/end position and
+shrink/grow transitions. There are now 15 example test groups. After the fix,
+`go test -mod=readonly -race ./example/bubble_components -count=1`, the example
+golden check/regeneration, full `go test -mod=readonly -race -count=1 ./...`,
+vet, gofmt and source/documentation whitespace checks passed. Regeneration left
+the new example golden byte-for-byte unchanged. Revised exact-head review is
+required before publication; terminal-rendering acceptance remains unverified.

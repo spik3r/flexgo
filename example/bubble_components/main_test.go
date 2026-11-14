@@ -56,7 +56,7 @@ func TestResizePreservesStateAndRenderIsStable(t *testing.T) {
 	if m.input.Value() != "saved" || m.view.YOffset() != 3 {
 		t.Fatal("resize lost component state")
 	}
-	if m.input.Width() != 40 || m.view.Width() != 42 || m.view.Height() != 8 {
+	if m.input.Width() != 39 || m.view.Width() != 42 || m.view.Height() != 8 {
 		t.Fatal("resize did not update component dimensions")
 	}
 	first := m.render()
@@ -340,6 +340,55 @@ func TestQuitFromViewportFocus(t *testing.T) {
 		}
 		if _, ok := cmd().(tea.QuitMsg); !ok {
 			t.Fatalf("%s returned a non-quit command", msg.String())
+		}
+	}
+}
+
+// The default Bubbles virtual cursor paints one cell with reverse video. Count
+// painted cells, not just escape codes that clipping can leave around no text.
+func cursorCells(s string) int {
+	var state byte
+	reverse, cells := false, 0
+	for len(s) > 0 {
+		seq, width, n, next := ansi.DecodeSequence(s, state, nil)
+		s, state = s[n:], next
+		if strings.HasPrefix(seq, "\x1b[") && strings.HasSuffix(seq, "m") {
+			for _, param := range strings.Split(seq[2:len(seq)-1], ";") {
+				switch param {
+				case "", "0", "27":
+					reverse = false
+				case "7":
+					reverse = true
+				}
+			}
+		} else if reverse {
+			cells += width
+		}
+	}
+	return cells
+}
+
+func TestInputCursorSurvivesBoundsAndResize(t *testing.T) {
+	for _, width := range []int{20, 42, 80} {
+		for _, length := range []int{width - 3, width - 2, width - 1, width + 20} {
+			for _, position := range []int{0, length / 2, length} {
+				m := initialModel()
+				value := strings.Repeat("x", length)
+				updated, _ := m.Update(tea.PasteMsg{Content: value})
+				m = updated.(model)
+				m.input.SetCursor(position)
+				for _, resizedWidth := range []int{width, 20, 80, width} {
+					m.resize(resizedWidth, 12)
+					line := strings.Split(m.render(), "\n")[1]
+					if cells := cursorCells(line); cells != 1 {
+						t.Fatalf("width=%d length=%d cursor=%d: %d visible cursor cells in %q", resizedWidth, length, position, cells, line)
+					}
+					if m.input.Value() != value || m.input.Position() != position {
+						t.Fatal("render/resize changed input value or cursor")
+					}
+					assertRenderBounds(t, m)
+				}
+			}
 		}
 	}
 }
