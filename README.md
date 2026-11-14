@@ -156,6 +156,10 @@ node.Justify = flexgo.JustifyEnd         // children packed to end
 node.Justify = flexgo.JustifySpaceBetween // space distributed between children
 ```
 
+With two or more children, `JustifySpaceBetween` uses all spare cells between
+children, with leftover cells from integer division assigned to earlier gaps. Gaps differ by at most one cell
+when there is spare space; configured `Gap` remains the minimum.
+
 ### Align (Cross Axis)
 
 Controls where children sit on the cross axis (vertical for Row containers, horizontal for Col containers):

@@ -157,11 +157,26 @@ func join(parts []string, dir Direction, justify Justify, totalW, totalH int, ga
 		if len(parts) == 1 {
 			return parts[0]
 		}
-		space := minGap + remaining/(len(parts)-1)
-		if space < minGap {
-			space = minGap
+		if remaining <= 0 {
+			return interleave(parts, dir, minGap, bg, cross)
 		}
-		return interleave(parts, dir, space, bg, cross)
+		space := minGap + remaining/(len(parts)-1)
+		extra := remaining % (len(parts) - 1)
+		var out []string
+		for i, part := range parts {
+			out = append(out, part)
+			if i == len(parts)-1 {
+				break
+			}
+			gapSize := space
+			if i < extra {
+				gapSize++
+			}
+			if gapSize > 0 {
+				out = append(out, spacer(dir, gapSize, bg, cross))
+			}
+		}
+		return concat(out, dir)
 	default:
 		return concat(parts, dir)
 	}
