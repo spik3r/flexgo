@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 	"github.com/spik3r/flexgo"
 )
 
@@ -95,16 +94,11 @@ func (m model) visibleOffset() int {
 	return min(m.offset, max(0, len(m.records[m.selected].lines)-max(0, m.height-4)))
 }
 
-// fit bounds leaf output explicitly: flexgo does not clip overflowing content.
+// fit joins logical records before clipping so embedded newlines also count.
 func fit(lines []string, w, h int) string {
-	if w <= 0 || h <= 0 {
-		return ""
-	}
-	out := make([]string, min(h, len(lines)))
-	for i := range out {
-		out[i] = lipgloss.NewStyle().MaxWidth(w).Render(lines[i])
-	}
-	return strings.Join(out, "\n")
+	return flexgo.ClipView(func(int, int) string {
+		return strings.Join(lines, "\n")
+	})(w, h)
 }
 
 func text(s string) func(int, int) string {

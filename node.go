@@ -102,7 +102,9 @@ type Node struct {
 	Background color.Color
 	Foreground color.Color
 
-	View func(w, h int) string // leaf renderer; ignored when Children is non-empty.
+	// View renders leaf content; ignored when Children is non-empty.
+	// Use ClipView to opt into bounded text output.
+	View func(w, h int) string
 }
 
 func HBox(children ...*Node) *Node {

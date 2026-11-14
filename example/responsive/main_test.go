@@ -197,3 +197,10 @@ func TestMinimumWidthHelp(t *testing.T) {
 		}
 	}
 }
+
+func TestLeafClippingCountsEmbeddedLines(t *testing.T) {
+	got := fit([]string{"first\nsecond", "third"}, 5, 1)
+	if got != "first" {
+		t.Fatalf("embedded newline escaped height limit: %q", got)
+	}
+}

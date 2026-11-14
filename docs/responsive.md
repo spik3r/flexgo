@@ -73,14 +73,15 @@ screen without moving application state into flexgo:
    sidebar consuming width.
 5. Bound leaf output to the callback's supplied width and height. Flexgo does
    **not** automatically wrap, scroll or clip overconstrained content. `fit`
-   clips lines to terminal-cell width using Lipgloss, and caps their count.
+   joins logical records and uses `flexgo.ClipView` to bound terminal-cell width
+   and line count, including embedded newlines.
    The example clips horizontally rather than wrapping; apps needing wrapped
    prose should use a viewport whose line mapping is recomputed on resize.
 6. Keep IO in `tea.Cmd`, not `View`. Store component models outside rebuilt
    layout nodes so interrupted or repeated navigation does not reset them.
 
-No core API, shrink algorithm or global breakpoint policy is introduced here.
-The example is a copyable integration pattern, not a new public component API.
+The example owns its breakpoints and state; `ClipView` handles leaf text only.
+It does not introduce a shrink algorithm or global breakpoint policy.
 
 ## Verification
 

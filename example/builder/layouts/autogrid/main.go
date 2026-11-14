@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -18,20 +17,8 @@ type model struct {
 	root          *flexgo.Node
 }
 
-func bounded(text string, w, h int) string {
-	if w <= 0 || h <= 0 {
-		return ""
-	}
-	lines := strings.Split(text, "\n")
-	lines = lines[:min(h, len(lines))]
-	for i := range lines {
-		lines[i] = lipgloss.NewStyle().MaxWidth(w).Render(lines[i])
-	}
-	return strings.Join(lines, "\n")
-}
-
 func label(text string) func(int, int) string {
-	return func(w, h int) string { return bounded(text, w, h) }
+	return flexgo.ClipView(func(w, h int) string { return text })
 }
 
 func tile(index int) func(int, int) string {
@@ -42,7 +29,7 @@ func tile(index int) func(int, int) string {
 		text := fmt.Sprintf("Tile %02d\nSynthetic local data", index+1)
 		return lipgloss.NewStyle().Width(w).Height(h).
 			Background(lipgloss.Color("60")).Foreground(lipgloss.Color("230")).
-			Render(bounded(text, w, h))
+			Render(label(text)(w, h))
 	}
 }
 
@@ -77,7 +64,7 @@ func (m model) View() tea.View {
 	var content string
 	// Seven one-column tiles need 7 content rows + 6 gutters + 4 frame rows.
 	if m.width < 18 || m.height < 17 {
-		content = bounded("Resize to 18x17\nq: quit", m.width, m.height)
+		content = label("Resize to 18x17\nq: quit")(m.width, m.height)
 	} else {
 		content = m.root.Render(m.width, m.height)
 	}
