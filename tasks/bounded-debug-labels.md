@@ -1,6 +1,6 @@
 # Keep debug labels within their reserved row
 
-Status: reviewed claim; implementation has not started.
+Status: local implementation complete; frozen for independent review.
 Owner: delegated Flexgo contributor, coordinated by Codex under the owner's
 related-repository maintenance request.
 Base: `0f0f49435b4c0f0c368c9eba028685d2aa46f54f` (verified remote main).
@@ -65,3 +65,32 @@ scanner, provider or real-home installation.
 Freeze the final diff and observed checks for two independent reviewers. The
 coordinator owns staging, commit, push, PR and normal merge after exact-head
 checks. No action outside these paths is authorized by this claim.
+
+## Implementation and observed validation
+
+The generated debug label now passes through existing ClipView at the current
+label width and one row before its ordinary bold styling. Frame arithmetic,
+callback dimensions, caller content and explicit-border precedence are unchanged.
+The Name field comment states the cropped display; stored Name and Inspect stay
+unchanged. No ClipView implementation or additional text parser changed.
+
+Frozen public Render tests failed on the old renderer for long and narrow
+labels, Unicode/ANSI/line-break names, nested layouts, spacing and zero-width
+metadata. Exact short-label bytes and body/overconstrained-child overflow
+controls already passed. After the change, all cases pass, including SGR/OSC8
+closure before the body, grapheme prefixes, tabs, fixed sizing, tiny callbacks,
+repeated renders/resizes and unchanged styles/Inspect output.
+
+Observed local checks with Go 1.25.9 and cached dependencies:
+
+- Focused debug-label regressions with the race detector: passed.
+- `gofmt -l .`: no output.
+- `go mod tidy`: passed; go.mod and go.sum stayed byte-identical.
+- `go vet ./...` and `go build ./...`: passed.
+- `go test -race -count=1 ./...`: passed, including unchanged example goldens.
+- Working and staged whitespace checks: passed; nothing was staged.
+
+The local toolchain was Go 1.25.9. Hosted Go 1.25.5 and independent exact-head
+review remain required before normal merge. No interactive application,
+external scanner/service or real-home installation was launched. No dependency,
+golden, README, example, prior task, Foundry or consumer pin changed.

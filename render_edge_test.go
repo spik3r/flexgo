@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // When a parent sets Background, the ambient bg should propagate to a
@@ -229,4 +230,193 @@ func customBorderBlock(w, h int) string {
 		lines[i] = strings.Repeat("x", w)
 	}
 	return strings.Join(lines, "\n")
+}
+
+func TestDebugLabelReservedRow(t *testing.T) {
+	cases := []struct {
+		name, label, prefix string
+		width               int
+		close               string
+	}{
+		{"short", "b", "b (10,5)", 10, ""},
+		{"long ASCII", "abcdefghijklmnopqrstuvwxyz", "abcdefgh", 10, ""},
+		{"spaced ASCII", "one two three", "one two ", 10, ""},
+		{"empty narrow", "", "(6,5", 6, ""},
+		{"wide", "界界界界界", "界界界界", 10, ""},
+		{"combining", strings.Repeat("e\u0301", 10), strings.Repeat("e\u0301", 8), 10, ""},
+		{"graphemes", strings.Repeat("👩‍💻", 5), strings.Repeat("👩‍💻", 4), 10, ""},
+		{"SGR", "\x1b[31mABCDEFGHIJK", "ABCDEFGH", 10, ansi.ResetStyle},
+		{"OSC8", "\x1b]8;;https://example.invalid\x1b\\ABCDEFGHIJK", "ABCDEFGH", 10, ansi.ResetHyperlink()},
+		{"LF", "first\nOMITTED", "first   ", 10, ""},
+		{"CRLF", "first\r\nOMITTED", "first   ", 10, ""},
+		{"CR", "first\rOMITTED", "first   ", 10, ""},
+		{"tab", "a\tb", "a    b (", 10, ""},
+		{"one cell", "long label", "l", 3, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			n := &Node{Debug: true, Name: tc.label, View: func(w, h int) string {
+				calls++
+				if w != tc.width-2 || h != 2 {
+					t.Errorf("callback %dx%d, want %dx2", w, h, tc.width-2)
+				}
+				return customBorderBlock(w, h)
+			}}
+			before := Inspect(n)
+			if err := Validate(n); err != nil {
+				t.Fatal(err)
+			}
+			out := n.Render(tc.width, 5)
+			if lipgloss.Width(out) != tc.width || lipgloss.Height(out) != 5 {
+				t.Fatalf("output %dx%d, want %dx5", lipgloss.Width(out), lipgloss.Height(out), tc.width)
+			}
+			raw := strings.Split(out, "\n")
+			lines := strings.Split(ansi.Strip(out), "\n")
+			if lines[1] != "│"+tc.prefix+"│" {
+				t.Fatalf("metadata %q, want prefix %q", lines[1], tc.prefix)
+			}
+			body := "│" + strings.Repeat("x", tc.width-2) + "│"
+			if lines[2] != body || lines[3] != body {
+				t.Fatalf("body changed: %q", lines[2:4])
+			}
+			if strings.Contains(out, "OMITTED") {
+				t.Fatal("later name line was retained")
+			}
+			if tc.close != "" && !strings.Contains(raw[1], tc.close) {
+				t.Fatal("metadata style/link not closed before body")
+			}
+			if again := n.Render(tc.width, 5); again != out || calls != 2 {
+				t.Fatal("repeat render changed output/callbacks")
+			}
+			if n.Name != tc.label || Inspect(n) != before {
+				t.Fatal("render changed stored name or Inspect output")
+			}
+		})
+	}
+}
+
+func TestDebugLabelShortBytes(t *testing.T) {
+	n := &Node{Debug: true, Name: "b", View: customBorderBlock}
+	want := "\u001b[38;5;240m╭────────╮\u001b[m\n" +
+		"\u001b[38;5;240m│\u001b[m\u001b[1mb (10,5)\u001b[m\u001b[38;5;240m│\u001b[m\n" +
+		"\u001b[38;5;240m│\u001b[mxxxxxxxx\u001b[38;5;240m│\u001b[m\n" +
+		"\u001b[38;5;240m│\u001b[mxxxxxxxx\u001b[38;5;240m│\u001b[m\n" +
+		"\u001b[38;5;240m╰────────╯\u001b[m"
+	if out := n.Render(10, 5); out != want {
+		t.Fatalf("short label bytes changed: %q", out)
+	}
+}
+
+func TestDebugLabelSpacingAndNestedFrames(t *testing.T) {
+	t.Run("spacing", func(t *testing.T) {
+		n := &Node{Debug: true, Name: "long diagnostic name", Margin: 1, Padding: 1,
+			Foreground: lipgloss.Color("7"), Background: lipgloss.Color("0"), View: func(w, h int) string {
+				if w != 8 || h != 2 {
+					t.Errorf("callback %dx%d, want8x2", w, h)
+				}
+				return customBorderBlock(w, h)
+			}}
+		before := *n
+		before.View = nil
+		out := n.Render(14, 9)
+		if lipgloss.Width(out) != 14 || lipgloss.Height(out) != 9 {
+			t.Fatalf("spacing output %dx%d", lipgloss.Width(out), lipgloss.Height(out))
+		}
+		after := *n
+		after.View = nil
+		if !reflect.DeepEqual(before, after) {
+			t.Fatal("render mutated styles")
+		}
+	})
+	t.Run("fixed width", func(t *testing.T) {
+		n := &Node{Debug: true, Name: "long fixed name", Width: 8, View: func(w, h int) string {
+			if w != 8 || h != 2 {
+				t.Errorf("fixed callback %dx%d, want8x2", w, h)
+			}
+			return customBorderBlock(w, h)
+		}}
+		out := n.Render(14, 5)
+		if lipgloss.Width(out) != 10 || lipgloss.Height(out) != 5 {
+			t.Fatalf("fixed output %dx%d", lipgloss.Width(out), lipgloss.Height(out))
+		}
+	})
+	for _, dir := range []Direction{Row, Col} {
+		t.Run(map[Direction]string{Row: "row", Col: "column"}[dir], func(t *testing.T) {
+			child := &Node{Debug: true, Name: "long nested name", View: func(w, h int) string {
+				if w != 8 || h != 2 {
+					t.Errorf("nested callback %dx%d, want8x2", w, h)
+				}
+				return customBorderBlock(w, h)
+			}}
+			width, height := 20, 5
+			if dir == Row {
+				child.Width = 10
+			} else {
+				child.Height = 5
+				width, height = 10, 10
+			}
+			root := &Node{Dir: dir, Children: []*Node{child, Leaf(customBorderBlock)}}
+			before := Inspect(root)
+			for range 2 {
+				out := root.Render(width, height)
+				if lipgloss.Width(out) != width || lipgloss.Height(out) != height {
+					t.Fatalf("nested output %dx%d", lipgloss.Width(out), lipgloss.Height(out))
+				}
+			}
+			if Inspect(root) != before {
+				t.Fatal("nested render changed tree")
+			}
+		})
+	}
+}
+
+func TestDebugLabelTinyAndResize(t *testing.T) {
+	const name = "NEVER_UNBOUNDED_LABEL"
+	var wantW, wantH int
+	n := &Node{Debug: true, Name: name, View: func(w, h int) string {
+		if w != wantW || h != wantH {
+			t.Errorf("callback %dx%d, want%dx%d", w, h, wantW, wantH)
+		}
+		return customBorderBlock(w, h)
+	}}
+	for _, size := range [][2]int{{10, 5}, {2, 5}, {1, 1}, {0, 0}, {3, 5}, {10, 5}} {
+		wantW, wantH = max(0, size[0]-2), max(0, size[1]-3)
+		out := n.Render(size[0], size[1])
+		if strings.Contains(out, name) {
+			t.Fatal("name escaped width bound")
+		}
+		if size[0] <= 2 {
+			if lipgloss.Width(out) > 2 || strings.Contains(ansi.Strip(out), "(") {
+				t.Fatalf("zero label width retained metadata: %q", out)
+			}
+		}
+		if n.Name != name {
+			t.Fatal("resize mutated name")
+		}
+	}
+}
+
+func TestDebugLabelDoesNotClipBodyOrOverrideBorders(t *testing.T) {
+	wide := lipgloss.NormalBorder()
+	wide.Left, wide.Right = "界", "界"
+	for _, border := range []lipgloss.Border{{}, lipgloss.NormalBorder(), wide} {
+		n := &Node{ShowBorder: true, Border: border, Debug: true, Name: "first\nOMITTED", View: customBorderBlock}
+		debug := n.Render(10, 5)
+		n.Debug = false
+		if plain := n.Render(10, 5); debug != plain {
+			t.Fatal("explicit border did not suppress debug")
+		}
+	}
+	for _, debug := range []bool{false, true} {
+		n := &Node{Debug: debug, Name: "long metadata name", View: func(int, int) string { return strings.Repeat("BODY\n", 8) + "BODY_END" }}
+		out := n.Render(10, 5)
+		if !strings.Contains(ansi.Strip(out), "BODY_END") || lipgloss.Height(out) <= 5 {
+			t.Fatal("caller body was silently clipped")
+		}
+	}
+	n := &Node{Dir: Col, Debug: true, Name: "b", Children: []*Node{{Height: 8}}}
+	if out := n.Render(10, 5); lipgloss.Height(out) <= 5 {
+		t.Fatal("overconstrained child was silently shrunk")
+	}
 }
