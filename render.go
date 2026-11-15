@@ -115,7 +115,10 @@ func (n *Node) render(w, h int, parentBg color.Color) string {
 		}
 		inner = borderStyle.Render(inner)
 	} else if showDebugFrame {
-		meta := lipgloss.NewStyle().Bold(true).Width(w).MaxWidth(w).Render(debugLabel(n.Name, allocW, allocH))
+		label := ClipView(func(int, int) string {
+			return debugLabel(n.Name, allocW, allocH)
+		})(w, 1)
+		meta := lipgloss.NewStyle().Bold(true).Width(w).MaxWidth(w).Render(label)
 		inner = lipgloss.JoinVertical(lipgloss.Left, meta, inner)
 		inner = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).

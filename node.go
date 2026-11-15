@@ -92,7 +92,7 @@ type Node struct {
 	AlignSelf *Align // per-child override of the parent's Align.
 
 	Debug bool   // draw a debug wrapper if no explicit border is set.
-	Name  string // label used inside the debug wrapper.
+	Name  string // first logical debug line cropped to fit; Inspect keeps the full name.
 
 	ShowBorder       bool // true = render Border around this node.
 	Border           lipgloss.Border
