@@ -27,7 +27,19 @@ func (n *Node) render(w, h int, parentBg color.Color) string {
 	showDebugFrame := n.Debug && !hasExplicitBorder(n)
 	showBorderFrame := hasExplicitBorder(n) && n.Border != (lipgloss.Border{})
 	if showBorderFrame || showDebugFrame {
-		w -= 2
+		frameWidth := 2
+		if showBorderFrame {
+			// Lipgloss alternates side glyphs and fills only empty sides with spaces.
+			sides := lipgloss.Border{Left: n.Border.Left, Right: n.Border.Right}
+			if sides.Left == "" {
+				sides.Left = " "
+			}
+			if sides.Right == "" {
+				sides.Right = " "
+			}
+			frameWidth = sides.GetLeftSize() + sides.GetRightSize()
+		}
+		w -= frameWidth
 		h -= 2
 		if showDebugFrame {
 			h-- // one extra row for the debug label
