@@ -1,6 +1,6 @@
 # Reserve the painted width of custom border sides
 
-Status: reviewed implementation claim; work has not started.
+Status: local implementation complete; frozen for independent review.
 Owner: delegated Flexgo contributor, coordinated by Codex under the owner's
 related-repository maintenance request.
 Base: `d2698de4e213073eece4e27856efa2bdaf53b554` (verified remote main).
@@ -52,3 +52,32 @@ cache; launch no interactive terminal, scanner or external service.
 Freeze the final diff and observed checks for two independent reviews. The
 coordinator owns staging, commit, publication and merge after exact-head checks.
 No work outside the stated paths is authorized by this claim.
+
+## Implementation and observed validation
+
+Nonempty explicit borders now reserve the widths of their painted vertical
+sides. A local side-only Border value keeps corner and horizontal glyph widths
+out of that calculation; empty sides receive the painter's space fallback.
+The original node and border styles are unchanged. Frame height and debug
+precedence retain their previous behavior.
+
+Frozen public Render regressions failed on the old code for wide, asymmetric,
+alternating and nonempty zero-width sides, as well as nested layouts and tiny
+allocations. Ordinary, hidden, top-only, wide-horizontal, wide-corner and
+short-label debug controls already passed. After the fix, all cases pass,
+including padding/margins, repeated renders and unchanged node styles.
+
+Observed local checks with Go 1.25.9, cached dependencies and an owned home:
+
+- Focused custom-border regressions with the race detector: passed.
+- `gofmt -l .`: no output.
+- `go mod tidy`: passed; go.mod and go.sum stayed byte-identical.
+- `go vet ./...` and `go build ./...`: passed.
+- `go test -race -count=1 ./...`: passed, including existing example goldens
+  without updates.
+- Working and staged whitespace checks: passed; nothing was staged.
+
+The local toolchain was Go 1.25.9, not the Go 1.25.5 selected by hosted CI.
+Hosted checks and independent exact-head review remain required before merge.
+No README, example, golden, dependency, release tag or consumer pin changed.
+No interactive terminal, scanner, external service or real-home setup ran.
