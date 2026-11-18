@@ -16,7 +16,7 @@ const (
 )
 
 // App is the root model. It owns the three screen models, the keymap,
-// and the modal flag — nothing else. Screens store their own internal
+// modal flag and help scroll position. Screens store their own internal
 // state; App routes messages and picks which screen to paint.
 type App struct {
 	width, height int
@@ -25,6 +25,7 @@ type App struct {
 	keys      KeyMap
 	screen    Screen
 	modalOpen bool
+	help      ViewportState
 
 	launcher LauncherScreen
 	scan     ScanScreen
@@ -53,15 +54,20 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.width, a.height = msg.Width, msg.Height
 		a.ready = true
 		a = a.sizeActiveScreen()
+		if a.modalOpen {
+			a = a.reconcileHelp()
+		}
 		return a, nil
 
 	case tea.KeyPressMsg:
 		key := msg.String()
 
-		// 1. Modal is captive. Only its own close/help bindings escape.
+		// 1. Modal keys close or scroll help; other input stays captive.
 		if a.modalOpen {
 			if Matches(key, a.keys.Close) || Matches(key, a.keys.Help) {
 				a.modalOpen = false
+			} else {
+				a = a.updateHelp(key)
 			}
 			return a, nil
 		}
@@ -72,6 +78,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, tea.Quit
 		case Matches(key, a.keys.Help):
 			a.modalOpen = true
+			a.help = ViewportState{}
 			return a, nil
 		case Matches(key, a.keys.Launch):
 			a.screen = ScreenLauncher
@@ -113,8 +120,8 @@ func (a App) View() tea.View {
 
 	subtitle, screenHint, body := a.currentScreen()
 	if a.modalOpen {
-		screenHint = "esc / ? close help"
-		body = buildKeymapCard(a.keys)
+		screenHint = a.helpHint()
+		body = a.helpBody()
 	}
 
 	tree := pageShell(a.composedSubtitle(subtitle), a.screen, body, screenHint)

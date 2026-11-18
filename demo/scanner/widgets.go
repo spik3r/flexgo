@@ -358,7 +358,7 @@ func filetreeView(lines []string, cursor int) func(w, h int) string {
 
 // --- keymap modal card ----------------------------------------------
 
-// buildKeymapCard returns the keymap modal as a body-friendly node.
+// buildKeymapCard returns the full keymap modal as a body-friendly node.
 // Sits inside pageShell's body slot, so the shared title and footer
 // stay visible while help is open.
 //
@@ -390,8 +390,8 @@ func buildKeymapCard(keys KeyMap) *flexgo.Node {
 	}
 
 	card := &flexgo.Node{
-		Width:            56,
-		Height:           24,
+		Width:            helpCardWidth,
+		Height:           helpCardHeight,
 		ShowBorder:       true,
 		Border:           lipgloss.RoundedBorder(),
 		BorderForeground: colAccent,
@@ -402,7 +402,7 @@ func buildKeymapCard(keys KeyMap) *flexgo.Node {
 			{Flex: 1, Background: colPanel, View: body},
 		},
 	}
-	return centered(card, 24)
+	return centered(card, helpCardHeight)
 }
 
 // centered wraps a fixed-size node in Flex-spacer rows and columns so

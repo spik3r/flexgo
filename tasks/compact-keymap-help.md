@@ -1,6 +1,6 @@
 # Make all reference help actions reachable in smaller terminals
 
-Status: claimed; implementation not started.
+Status: implementation and local checks complete; awaiting independent review and CI.
 Owner: Codex coordinator with delegated builder.
 Branch: codex/compact-keymap-help.
 Base: 178499e606146c0af5e94f1f5f19376dc9c115f3, freshly fetched main.
@@ -67,3 +67,54 @@ unchanged. Record the actual local Go version and require hosted CI. Independent
 review covers frozen source and immutable commit. The coordinator owns named
 staging, commit, push and normal merge after all gates. No next implementation
 starts before that merge.
+
+## Observed implementation and checks
+
+The coordinator recorded a genuine clean start at claim commit
+`368b4daeee45b89ac5dd7e55a66e24f3ffe9c64e` before implementation edits.
+Frozen actual-App regressions failed against unchanged production: help returned
+36 rows at 80 by 24 and 60 at 40 by 16, final entry text could not be brought into
+view, modal scroll keys did nothing, and remapped close hints stayed hardcoded.
+Long/wide Next and Prev labels also expanded the full card at larger terminals.
+Six full ANSI baselines were captured before edits at 100 by 40 and 120 by 40,
+covering each underlying screen; all six hashes still match exactly.
+
+App now owns a help offset. Current modal scroll keys move only help, while
+Close and Help keep first priority and other keys stay captive. The full card is
+used only when its actual rendered extent fits the current body allocation and
+labels. Otherwise a compact title and wrapped viewport show the same row list
+used to count scroll limits. Wrapping uses the existing ANSI-aware terminal-cell
+helper. Compact hints choose current aliases that survive dispatch priority,
+prefer a fitting close key, and omit empty or colliding aliases.
+
+Opening resets to the first row; resize preserves a legal top row and clamps only
+when needed. Nonpositive allocations, including MinInt sizes, preserve position
+and ignore navigation. Rendering and callback reuse leave owned and captured
+positions unchanged. Existing underlying screen resize reconciliation remains in
+place. Actual callback allocation tests cover the compact geometry; transition
+checks cover body widths 54 through 58 and 74 and heights 22 through 28, including
+the centred frame's spacer rows. Long labels select the compact path even at
+100 by 40 and 120 by 40 rather than overflowing the fixed key column.
+
+With default bindings, all twelve entry labels and descriptions, including Close,
+were collected across scroll frames on Launcher, Scan and History at both target
+sizes. Tested safe remaps and long/wide labels also retain text reachability.
+No new navigation is invented when bindings are empty. Private actual-App ANSI
+and plain frames at both sizes show the initial and final help pages. At 40 by 16
+the final page has offset seven and includes the Close description.
+
+Local validation used Go 1.27.4 on darwin/arm64, an isolated cache, GOWORK and GOENV
+off, offline dependencies and readonly module inputs. Observed final checks
+passed:
+
+- `go test -count=1 ./demo/scanner`
+- `go test -race -count=1 ./...`, including unchanged example golden tests
+- `go vet ./...`
+- `go build ./...`
+- `gofmt -l .` returned no paths
+- `go mod tidy` left go.mod and go.sum byte-identical
+
+Existing tests were not edited. Launcher, Scan and History bodies, core,
+ClipView, KeyMap definitions, dependency files and goldens remain unchanged.
+Independent review and hosted CI remain required; the coordinator owns staging,
+publication and normal merge after those gates pass.
