@@ -207,6 +207,10 @@ app, swap that stub for `charm.land/bubbles/v2/viewport`, which
 handles word wrap, horizontal scroll, and mouse. The state/key flow
 stays identical — only the paint function changes.
 
+History keeps the selected run inside a sidebar window without changing the run
+cursor or detail offset during rendering. At small heights, run rows take priority
+over the heading and padding; narrow rows clip to the available terminal cells.
+
 ### Modal overlay
 
 flexgo can't composite today (it's on the backlog as X1: two-phase

@@ -1,6 +1,6 @@
 # Keep the selected History run inside its sidebar
 
-Status: claimed; implementation has not started.
+Status: implementation and local checks complete; awaiting independent review and CI.
 Owner: Codex coordinator with a delegated builder.
 Branch: codex/history-sidebar-viewport.
 Base: 83628794238856bd0f2e93c386c6ec2287b6dd0e, freshly fetched main.
@@ -56,3 +56,44 @@ local Go version; require hosted CI at the module's Go version before merge.
 A separate reviewer and the coordinator review the exact frozen commit.
 The coordinator owns staging, publication and normal merge. No real scanner,
 network/provider call, interactive app or home installation is part of testing.
+
+## Observed implementation and local checks
+
+The clean start was recorded at claim commit
+`2a27963194f18f3319019668b6728e61f720df03` before implementation edits.
+The new sidebar regressions failed against the unchanged callback: allocations
+28 by 1 through 8 painted 28 by 9, nonpositive callbacks returned text, empty
+history lacked its hint, and the 80 by 15 page painted 80 by 19. The literal
+28 by 12 ANSI baseline passed before and after the fix.
+
+The callback now chooses a selection-following run window. Heights below five
+omit vertical decoration; narrow widths drop horizontal padding and row indent
+when those would hide every text cell. Existing ClipView bounds each run and
+the heading using terminal cells. Empty history paints a bounded hint. Rendering
+keeps results, cursor and detail offset unchanged; Update is unchanged.
+
+Local validation used Go 1.27.4 on darwin/arm64, with an isolated build cache,
+GOWORK and GOENV off, offline dependency resolution and readonly module inputs.
+Observed checks passed:
+
+- `go test -count=1 ./demo/scanner -run TestHistorySidebar`
+- `go test -race -count=1 ./...`, including existing example golden tests
+- `go vet ./...`
+- `go build ./...`
+- `gofmt -l .` returned no paths
+- `go mod tidy` left go.mod and go.sum byte-identical
+
+The tests cover first, middle and final selections, heights one through twelve,
+nonpositive and narrow sizes, long/wide/SGR text, navigation, repeated resize,
+empty and shortened lists, render purity, original fitting bytes, and the
+80 by 15 page. No dependency, example golden or other production file changed.
+The coordinator still owns staging and publication. Independent review and
+hosted CI at the module's Go version remain required before merge.
+
+Independent review caught one narrow case in the first candidate: at width seven,
+horizontal decoration left one cell for a leading two-cell grapheme, producing
+only spaces. A new regression reproduced this for `界界` and `👩‍💻name` before
+the correction. Horizontal decoration now needs at least two remaining text
+cells. The corrected candidate passes that regression while retaining selected
+colors, whole graphemes and the original 28 by 12 bytes. The full local checks
+above were repeated against the corrected source and passed.
