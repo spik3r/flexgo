@@ -1,6 +1,6 @@
 # Match scanner scroll state to its visible viewport
 
-Status: claimed; implementation has not started.
+Status: implementation and local checks complete; awaiting independent review and CI.
 Owner: Codex coordinator with a delegated builder.
 Branch: codex/scanner-viewport-state.
 Base: 443a6b406f7e15f3dcb9ba190c2665715ac8e3a3, freshly fetched main.
@@ -76,3 +76,46 @@ files, vet and build. Report the actual local Go version and require hosted CI
 at the module's Go version. A separate reviewer and the coordinator review the
 frozen and committed source. The coordinator owns staging, publication and normal
 merge after all gates pass. No other implementation begins before this merge.
+
+## Observed implementation and checks
+
+The coordinator recorded a genuine clean start at claim commit
+`bc583e7e4a4c5c16b3f7120a5117cd806ebb437b` before implementation edits.
+The frozen App-message regressions failed against unchanged production code:
+PageDown stored 38 and Bottom stored 39 for 39 rows with ten visible; reverse
+movement stayed outside the painted range. Resize, opened-file and History
+activation tests also failed. Reusing a callback at ten, twenty and ten rows
+changed its captured offset from 29 to 19. Ordinary legal-position paint bytes
+were captured before implementation and still match exactly.
+
+App now passes the current body size to the active screen on resize and screen
+activation. Internal size helpers share shell, split, tab and border dimensions
+with construction; tests intercept real leaf allocations and compare both width
+and height. Active updates reconcile before movement and after tab/file
+transitions. Inactive tabs retain their positions until activation. Zero or
+negative allocations preserve scroll positions and ignore scroll keys. Sizes
+clamp before subtraction, including MinInt inputs, which otherwise wrap into
+positive allocations; a separate regression reproduced that error before fixing
+it. Rendering clamps only a local offset and leaves captured state unchanged.
+
+Local validation used Go 1.27.4 on darwin/arm64, an isolated cache, GOWORK and GOENV
+off, offline dependency resolution and readonly module inputs. Observed checks
+passed against the final implementation:
+
+- `go test -count=1 ./demo/scanner`
+- `go test -race -count=1 ./...`, including existing example golden tests
+- `go vet ./...`
+- `go build ./...`
+- `gofmt -l .` returned no paths
+- `go mod tidy` left go.mod and go.sum byte-identical
+
+Tests cover each Scan viewport, opened files, History details, actual allocations
+at heights one, two, ten and beyond content length, narrow and nonpositive widths,
+resize/restore, inactive tabs, remapped keys, captive help, file-list semantics,
+negative/stale positions, callback reuse and ordinary paint bytes. Existing
+recovery and History sidebar regressions pass unchanged. The optional existing
+widgets_test.go needed no edits. Core, dependencies, goldens and the History
+sidebar window remain unchanged.
+
+Independent review and hosted CI at the module's Go version remain required.
+The coordinator owns staging, publication and normal merge after those gates.

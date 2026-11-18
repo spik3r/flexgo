@@ -14,9 +14,10 @@ import (
 // Scan screen (sidebar + main), different data. Reusing the shape is
 // the point — switch screens, keep the user oriented.
 type HistoryScreen struct {
-	results []ScanResult
-	cursor  int
-	detail  ViewportState
+	results  []ScanResult
+	cursor   int
+	detail   ViewportState
+	bodySize viewportSize
 }
 
 func NewHistoryScreen() HistoryScreen {
@@ -38,6 +39,8 @@ func (h HistoryScreen) Update(msg tea.KeyPressMsg, keys KeyMap) HistoryScreen {
 	if len(h.results) == 0 {
 		return h
 	}
+	size := h.viewportSize()
+	size.scroll(&h.detail, 0, len(h.detailLines()))
 	switch {
 	case Matches(key, keys.Up), Matches(key, keys.Prev):
 		if h.cursor > 0 {
@@ -56,16 +59,16 @@ func (h HistoryScreen) Update(msg tea.KeyPressMsg, keys KeyMap) HistoryScreen {
 		h.cursor = len(h.results) - 1
 		h.detail = ViewportState{}
 	case Matches(key, keys.PageUp):
-		h.detail.ScrollBy(-10, len(h.detailLines()), 1)
+		size.scroll(&h.detail, -10, len(h.detailLines()))
 	case Matches(key, keys.PageDown):
-		h.detail.ScrollBy(10, len(h.detailLines()), 1)
+		size.scroll(&h.detail, 10, len(h.detailLines()))
 	}
 	return h
 }
 
 func (h HistoryScreen) Body(w, height int) *flexgo.Node {
 	sidebar := &flexgo.Node{
-		Width:      28,
+		Width:      historySidebarWidth,
 		Background: colPanel,
 		View:       h.sidebarView(),
 	}
@@ -81,7 +84,7 @@ func (h HistoryScreen) Body(w, height int) *flexgo.Node {
 	return &flexgo.Node{
 		Flex:       1,
 		Dir:        flexgo.Row,
-		Gap:        2,
+		Gap:        screenSplitGap,
 		Background: colBg,
 		Children:   []*flexgo.Node{sidebar, main},
 	}

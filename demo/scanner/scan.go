@@ -15,7 +15,8 @@ import (
 // — the screen has no header/footer of its own, which is what keeps
 // the chrome consistent across screens.
 type ScanScreen struct {
-	profile Profile
+	profile  Profile
+	bodySize viewportSize
 
 	activeTab int
 	tabNames  []string
@@ -71,6 +72,8 @@ func (s ScanScreen) Footer() string {
 // is open. It owns tab switching, scroll, and file-open transitions.
 func (s ScanScreen) Update(msg tea.KeyPressMsg, keys KeyMap) ScanScreen {
 	key := msg.String()
+	s = s.reconcileViewport()
+	size := s.viewportSize()
 
 	// Opened-file viewer keys rebind Close to "back to Files tab".
 	if s.openedPath != "" {
@@ -79,15 +82,15 @@ func (s ScanScreen) Update(msg tea.KeyPressMsg, keys KeyMap) ScanScreen {
 			s.openedPath = ""
 			s.openedBody = nil
 		case Matches(key, keys.Up):
-			s.viewports[3].ScrollBy(-1, len(s.openedBody), 1)
+			size.scroll(&s.viewports[3], -1, len(s.openedBody))
 		case Matches(key, keys.Down):
-			s.viewports[3].ScrollBy(1, len(s.openedBody), 1)
+			size.scroll(&s.viewports[3], 1, len(s.openedBody))
 		case Matches(key, keys.PageUp):
-			s.viewports[3].ScrollBy(-10, len(s.openedBody), 1)
+			size.scroll(&s.viewports[3], -10, len(s.openedBody))
 		case Matches(key, keys.PageDown):
-			s.viewports[3].ScrollBy(10, len(s.openedBody), 1)
+			size.scroll(&s.viewports[3], 10, len(s.openedBody))
 		}
-		return s
+		return s.reconcileViewport()
 	}
 
 	s.filesCursor = max(0, min(s.filesCursor, len(s.files)-1))
@@ -105,7 +108,7 @@ func (s ScanScreen) Update(msg tea.KeyPressMsg, keys KeyMap) ScanScreen {
 				s.filesCursor--
 			}
 		} else {
-			s.viewports[s.activeTab].ScrollBy(-1, s.contentLen(), 1)
+			size.scroll(&s.viewports[s.activeTab], -1, s.contentLen())
 		}
 	case Matches(key, keys.Down):
 		if s.activeTab == 3 {
@@ -113,19 +116,23 @@ func (s ScanScreen) Update(msg tea.KeyPressMsg, keys KeyMap) ScanScreen {
 				s.filesCursor++
 			}
 		} else {
-			s.viewports[s.activeTab].ScrollBy(1, s.contentLen(), 1)
+			size.scroll(&s.viewports[s.activeTab], 1, s.contentLen())
 		}
 	case Matches(key, keys.PageUp):
-		s.viewports[s.activeTab].ScrollBy(-10, s.contentLen(), 1)
+		size.scroll(&s.viewports[s.activeTab], -10, s.contentLen())
 	case Matches(key, keys.PageDown):
-		s.viewports[s.activeTab].ScrollBy(10, s.contentLen(), 1)
+		size.scroll(&s.viewports[s.activeTab], 10, s.contentLen())
 	case Matches(key, keys.Top):
-		s.viewports[s.activeTab].Offset = 0
+		if size.positive() {
+			s.viewports[s.activeTab].Offset = 0
+		}
 		if s.activeTab == 3 {
 			s.filesCursor = 0
 		}
 	case Matches(key, keys.Bottom):
-		s.viewports[s.activeTab].Offset = s.contentLen()
+		if size.positive() {
+			s.viewports[s.activeTab].Offset = max(0, s.contentLen()-size.height)
+		}
 		if s.activeTab == 3 {
 			s.filesCursor = max(0, len(s.files)-1)
 		}
@@ -136,10 +143,13 @@ func (s ScanScreen) Update(msg tea.KeyPressMsg, keys KeyMap) ScanScreen {
 			s.viewports[3] = ViewportState{}
 		}
 	}
-	return s
+	return s.reconcileViewport()
 }
 
 func (s ScanScreen) contentLen() int {
+	if s.openedPath != "" {
+		return len(s.openedBody)
+	}
 	switch s.activeTab {
 	case 0:
 		return len(renderProgress(s.progress))
@@ -163,14 +173,14 @@ func (s ScanScreen) Body(w, h int) *flexgo.Node {
 			Flex:             1,
 			Background:       colPanel,
 			ShowBorder:       true,
-			Border:           lipgloss.RoundedBorder(),
+			Border:           fileViewerBorder,
 			BorderForeground: colAccent,
 			View:             viewportView(&viewerState, s.openedBody),
 		}
 	}
 
 	sidebar := &flexgo.Node{
-		Width:      24,
+		Width:      scanSidebarWidth,
 		Background: colPanel,
 		View:       s.sidebarView(),
 	}
@@ -193,7 +203,7 @@ func (s ScanScreen) Body(w, h int) *flexgo.Node {
 	return &flexgo.Node{
 		Flex:       1,
 		Dir:        flexgo.Row,
-		Gap:        2,
+		Gap:        screenSplitGap,
 		Background: colBg,
 		Children:   []*flexgo.Node{sidebar, main},
 	}
@@ -261,12 +271,12 @@ func tabStripNode(names []string, active int) *flexgo.Node {
 		})
 	}
 	return &flexgo.Node{
-		Height:     2,
+		Height:     tabStripHeight,
 		Dir:        flexgo.Col,
 		Background: colBg,
 		Children: []*flexgo.Node{
-			{Height: 1, Dir: flexgo.Row, Background: colBg, Children: cells},
-			{Height: 1, Background: colBg, View: underlineView()},
+			{Height: tabRowHeight, Dir: flexgo.Row, Background: colBg, Children: cells},
+			{Height: tabRowHeight, Background: colBg, View: underlineView()},
 		},
 	}
 }

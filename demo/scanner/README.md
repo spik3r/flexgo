@@ -207,6 +207,16 @@ app, swap that stub for `charm.land/bubbles/v2/viewport`, which
 handles word wrap, horizontal scroll, and mouse. The state/key flow
 stays identical — only the paint function changes.
 
+The root passes the current body size to the active screen on resize and screen
+activation. Scroll updates use the allocated viewport height, so reversing at the
+bottom moves on the first key. Resizing keeps the top row when it is still legal;
+a larger viewport clamps it only as needed. Without a positive viewport allocation,
+scroll keys keep the last position until space returns. Inactive tabs keep their
+positions until activation. PageUp and PageDown still move ten rows.
+
+Painting projects the offset without changing model or callback state. Reusing a
+callback at different sizes does not change its next output at the original size.
+
 History keeps the selected run inside a sidebar window without changing the run
 cursor or detail offset during rendering. At small heights, run rows take priority
 over the heading and padding; narrow rows clip to the available terminal cells.
