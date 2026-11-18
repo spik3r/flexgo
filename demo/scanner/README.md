@@ -153,11 +153,11 @@ Launcher uses a compact profile title and bounded field rows. With help closed, 
 fits 80 by 24 and 40 by 16 terminals while keeping all five fields visible.
 The same cursor keys select fields; values clip by terminal cells, and a short
 start hint stays in the footer. Rendering and resize keep the profile and cursor.
-Text, Enter and Space do not edit fields or toggle Deep. The fixed help card and
-terminals too small for the fixed shell chrome retain their existing limits.
+Text, Enter and Space do not edit fields or toggle Deep. Terminals too small for
+the fixed shell chrome retain their existing limits.
 
 Modal overlay reuses this: when the keymap modal is open, `App.View`
-swaps only the body for `buildKeymapCard(keys)` — the header and
+swaps only the body for keymap help — the header and
 footer stay visible and the user sees they're still inside the same
 screen. No more "replace the whole tree" stunt.
 
@@ -228,6 +228,15 @@ callback at different sizes does not change its next output at the original size
 History keeps the selected run inside a sidebar window without changing the run
 cursor or detail offset during rendering. At small heights, run rows take priority
 over the heading and padding; narrow rows clip to the available terminal cells.
+
+Help keeps its full card when the current labels and card fit. Otherwise it uses
+wrapped terminal-cell rows in a compact viewport, fitting 80 by 24 and 40 by 16.
+With default bindings, all twelve action descriptions remain reachable.
+Current Up/Down, PageUp/PageDown and
+Top/Bottom bindings scroll help; pages move ten rows. Close and Help take first
+priority, and other keys remain captive. Compact hints use usable current aliases
+and omit collisions or empty bindings. Opening resets help to the first row;
+resize keeps a legal top row, and painting does not change its position.
 
 ### Modal overlay
 
