@@ -9,10 +9,15 @@ import (
 	"github.com/spik3r/flexgo"
 )
 
-// LauncherScreen is the wizard-style profile editor. Its body is a
-// centred card (auto-margins all four sides) on a colBg backdrop, so
-// the page shell's header/footer sit flush and the card floats in
-// the middle without touching them.
+const (
+	launcherCardWidth  = 60
+	launcherCardHeight = 20
+	// Zero-height spacer leaves still paint one row above and below the card.
+	launcherCardBodyHeight = launcherCardHeight + 2
+)
+
+// LauncherScreen presents a scan profile and a cursor over its fields.
+// It uses a centred card when space allows and compact rows otherwise.
 type LauncherScreen struct {
 	profile Profile
 	cursor  int
@@ -49,15 +54,15 @@ func (l LauncherScreen) Update(msg tea.KeyPressMsg, keys KeyMap) LauncherScreen 
 
 func (l LauncherScreen) Profile() Profile { return l.profile }
 
-// Body returns the centred profile card. Centring is delegated to the
-// `centered` helper in widgets.go, which builds an explicit Flex-
-// spacer frame around the card — the only approach that guarantees
-// every cell around the card is painted with colBg. See that helper
-// for the reasoning.
+// Body uses its allocated body dimensions to choose a centred card or
+// compact rows. Both presentations leave profile and cursor state unchanged.
 func (l LauncherScreen) Body(w, h int) *flexgo.Node {
+	if compactLauncher(w, h) {
+		return &flexgo.Node{Flex: 1, Background: colPanel, View: l.compactView()}
+	}
 	card := &flexgo.Node{
-		Width:            60,
-		Height:           20,
+		Width:            launcherCardWidth,
+		Height:           launcherCardHeight,
 		ShowBorder:       true,
 		Border:           lipgloss.RoundedBorder(),
 		BorderForeground: colAccent,
@@ -69,17 +74,56 @@ func (l LauncherScreen) Body(w, h int) *flexgo.Node {
 			{Height: 2, Background: colPanel, View: l.cardFooter()},
 		},
 	}
-	return centered(card, 20)
+	return centered(card, launcherCardHeight)
 }
 
-func (l LauncherScreen) cardBody() func(int, int) string {
-	values := []string{
+func compactLauncher(w, h int) bool {
+	return w < launcherCardWidth || h < launcherCardBodyHeight
+}
+
+func (l LauncherScreen) fieldValues() []string {
+	return []string{
 		l.profile.Name,
 		l.profile.Root,
 		strings.Join(l.profile.Include, ", "),
 		strings.Join(l.profile.Exclude, ", "),
 		boolLabel(l.profile.Deep),
 	}
+}
+
+func (l LauncherScreen) compactView() func(int, int) string {
+	values := l.fieldValues()
+	return func(w, h int) string {
+		if w <= 0 || h <= 0 {
+			return ""
+		}
+		rows := make([]string, h)
+		for i := range rows {
+			rows[i] = padLineBg("", w, colPanel, colText)
+		}
+		first, visible := 0, h
+		if h > len(l.fields) {
+			title := flexgo.ClipView(func(int, int) string { return headingStyle().Render("Scan profile") })(w, 1)
+			rows[0] = padLineBg(title, w, colPanel, colText)
+			first, visible = 1, h-1
+		}
+		cursor := max(0, min(l.cursor, len(l.fields)-1))
+		offset := max(0, cursor-visible+1)
+		for i := offset; i < min(offset+visible, len(l.fields)); i++ {
+			bg, fg := colPanel, colText
+			if i == cursor {
+				bg, fg = colSelected, colHighlight
+			}
+			line := l.fields[i] + ": " + values[i]
+			clipped := flexgo.ClipView(func(int, int) string { return line })(w, 1)
+			rows[first+i-offset] = padLineBg(clipped, w, bg, fg)
+		}
+		return strings.Join(rows, "\n")
+	}
+}
+
+func (l LauncherScreen) cardBody() func(int, int) string {
+	values := l.fieldValues()
 	return func(w, h int) string {
 		rows := make([]string, len(l.fields))
 		for i, name := range l.fields {

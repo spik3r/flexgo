@@ -148,6 +148,14 @@ func centered(card *flexgo.Node, cardHeight int) *flexgo.Node {
 The Launcher profile card and the keymap modal both centre via this
 helper.
 
+When its allocated body cannot fit the 60 by 20 card and its centring rows,
+Launcher uses a compact profile title and bounded field rows. With help closed, the default Launcher
+fits 80 by 24 and 40 by 16 terminals while keeping all five fields visible.
+The same cursor keys select fields; values clip by terminal cells, and a short
+start hint stays in the footer. Rendering and resize keep the profile and cursor.
+Text, Enter and Space do not edit fields or toggle Deep. The fixed help card and
+terminals too small for the fixed shell chrome retain their existing limits.
+
 Modal overlay reuses this: when the keymap modal is open, `App.View`
 swaps only the body for `buildKeymapCard(keys)` — the header and
 footer stay visible and the user sees they're still inside the same
