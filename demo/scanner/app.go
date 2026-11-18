@@ -149,7 +149,12 @@ func (a App) composedSubtitle(subtitle string) string {
 func (a App) currentScreen() (subtitle, screenHint string, body *flexgo.Node) {
 	switch a.screen {
 	case ScreenLauncher:
-		return a.launcher.Subtitle(), a.launcher.Footer(), a.launcher.Body(a.width, a.height)
+		size := pageBodySize(a.width, a.height)
+		hint := a.launcher.Footer()
+		if compactLauncher(size.width, size.height) {
+			hint = "tab move · 2 scan"
+		}
+		return a.launcher.Subtitle(), hint, a.launcher.Body(size.width, size.height)
 	case ScreenScan:
 		return a.scan.Subtitle(), a.scan.Footer(), a.scan.Body(a.width, a.height)
 	case ScreenHistory:

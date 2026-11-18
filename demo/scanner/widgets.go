@@ -157,7 +157,7 @@ func brandTitleView() func(w, h int) string {
 // the right edge at any terminal width — equivalent to CSS
 // justify-content: space-between.
 func subheaderView(subtitle string, active Screen) func(w, h int) string {
-	return func(w, h int) string {
+	return flexgo.ClipView(func(w, h int) string {
 		barBg := lipgloss.NewStyle().Background(colPanel)
 
 		left := barBg.
@@ -185,7 +185,7 @@ func subheaderView(subtitle string, active Screen) func(w, h int) string {
 		gap := barBg.Width(gapWidth).Render("")
 		row := lipgloss.JoinHorizontal(lipgloss.Top, left, gap, right)
 		return barBg.Width(w).Height(h).Render(row)
-	}
+	})
 }
 
 // dividerView renders a single row of box-drawing rule in colMuted on
@@ -203,14 +203,14 @@ func dividerView() func(w, h int) string {
 // screenHintView is the first footer row: the active screen's own
 // keymap hint, in muted text on the page bg.
 func screenHintView(hint string) func(w, h int) string {
-	return func(w, h int) string {
+	return flexgo.ClipView(func(w, h int) string {
 		return lipgloss.NewStyle().
 			Width(w).Height(h).
 			Background(colBg).
 			Foreground(colSubtle).
 			Padding(0, 2).
 			Render(hint)
-	}
+	})
 }
 
 // globalHintView is the last row of the footer: the fixed global

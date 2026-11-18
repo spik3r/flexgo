@@ -1,6 +1,6 @@
 # Keep the reference Launcher usable in smaller terminals
 
-Status: claimed; implementation not started.
+Status: implementation and local checks complete; awaiting independent review and CI.
 Owner: Codex coordinator with a delegated builder.
 Branch: codex/compact-launcher.
 Base: 7c9f78c9658797518d1dc5644bddc0707016c847, freshly fetched main.
@@ -57,3 +57,48 @@ files unchanged. Record actual Go version. A separate reviewer reviews the froze
 source and immutable commit; hosted CI must pass before the coordinator merges.
 The coordinator owns named staging, commit, push and normal merge. No next
 implementation starts before this merge.
+
+## Observed implementation and checks
+
+The coordinator recorded a genuine clean start at claim commit
+`f33b10d34586d5ffb857224fa61f3b0ed1175807` before implementation edits.
+Frozen real-App regressions failed against unchanged production: 80 by 24
+painted 32 rows, 40 by 16 painted 55 rows, and a long/wide custom profile painted
+79 rows at 40 by 16. Full ANSI outputs and hashes were captured at 100 by 40 and
+120 by 40 for all five cursor positions before implementation; all ten hashes
+still match exactly.
+
+Launcher now receives the actual shell body budget. When the centred card and
+its spacer rows cannot fit, it paints a compact title and bounded field rows.
+At both requested sizes all five fields stay visible, and the footer keeps a
+short start hint. Existing ClipView bounds the two shell text callbacks that
+wrapped in narrow terminals; fitting chrome bytes remain unchanged. No profile,
+cursor or scroll state was added. Navigation, inert text/Enter/Space behavior,
+remapped keys, modal capture and the synthetic Scan profile handoff are unchanged.
+
+Boundary checks first reproduced the centred frame's extra rows at body heights
+20 and 21. Its zero-height spacer leaves still paint one row each. The compact
+cutoff therefore includes both spacer rows, and tests cover body widths 58
+through 64, 74 and 94 and heights 19 through 23 using both Body and actual App
+rendering. Private ANSI/plain frames at 80 by 24 and 40 by 16 were captured for
+review; they show all fields, selected Deep, the short start hint and global
+navigation. Help content remains the separate fixed card described above.
+
+Local validation used Go 1.27.4 on darwin/arm64, an isolated build cache, GOWORK
+and GOENV off, offline dependencies and readonly module inputs. Observed final
+checks passed:
+
+- `go test -count=1 ./demo/scanner`
+- `go test -race -count=1 ./...`, including unchanged example golden tests
+- `go vet ./...`
+- `go build ./...`
+- `gofmt -l .` returned no paths
+- `go mod tidy` left go.mod and go.sum byte-identical
+
+The new tests cover actual App bounds per terminal row, all five selected
+fields and cursor limits, resize round trips, deterministic pure rendering,
+long/wide profile values, inert field inputs, remapped keys, modal/global
+routing, synthetic profile handoff, fitting bytes and card boundaries. Existing
+widgets_test.go needed no edits. Core, Scan/History bodies, dependencies and
+goldens remain unchanged. Independent review and hosted CI remain required;
+the coordinator owns staging, publication and normal merge.
