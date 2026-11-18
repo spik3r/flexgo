@@ -52,6 +52,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		a.width, a.height = msg.Width, msg.Height
 		a.ready = true
+		a = a.sizeActiveScreen()
 		return a, nil
 
 	case tea.KeyPressMsg:
@@ -80,9 +81,11 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// One-way data flow — the scan screen doesn't reach back.
 			a.scan = NewScanScreen(a.launcher.Profile())
 			a.screen = ScreenScan
+			a = a.sizeActiveScreen()
 			return a, nil
 		case Matches(key, a.keys.History):
 			a.screen = ScreenHistory
+			a = a.sizeActiveScreen()
 			return a, nil
 		}
 
@@ -153,4 +156,15 @@ func (a App) currentScreen() (subtitle, screenHint string, body *flexgo.Node) {
 		return a.history.Subtitle(), a.history.Footer(), a.history.Body(a.width, a.height)
 	}
 	return "", "", &flexgo.Node{Flex: 1, Background: colBg}
+}
+
+func (a App) sizeActiveScreen() App {
+	size := pageBodySize(a.width, a.height)
+	switch a.screen {
+	case ScreenScan:
+		a.scan = a.scan.withBodySize(size)
+	case ScreenHistory:
+		a.history = a.history.withBodySize(size)
+	}
+	return a
 }

@@ -74,13 +74,13 @@ func pageShell(subtitle string, active Screen, body *flexgo.Node, screenHint str
 		Background: colBg,
 		Children: []*flexgo.Node{
 			// Brand title bar — three rows of colAccent, "FlexGo" centred.
-			{Height: 3, Background: colAccent, View: brandTitleView()},
+			{Height: shellBrandHeight, Background: colAccent, View: brandTitleView()},
 
 			// Subheader — subtitle on left, screen indicator on right.
-			{Height: 1, Background: colPanel, View: subheaderView(subtitle, active)},
+			{Height: shellLineHeight, Background: colPanel, View: subheaderView(subtitle, active)},
 
 			// Divider — a faint horizontal rule to separate chrome from body.
-			{Height: 1, Background: colBg, View: dividerView()},
+			{Height: shellLineHeight, Background: colBg, View: dividerView()},
 
 			// Body slot, margined with explicit spacer nodes rather than
 			// the Node.Paddings field. Paddings + a full-width bg relies
@@ -93,20 +93,20 @@ func pageShell(subtitle string, active Screen, body *flexgo.Node, screenHint str
 				Dir:        flexgo.Row,
 				Background: colBg,
 				Children: []*flexgo.Node{
-					{Width: 2, Background: colBg, View: solidView(colBg)},
+					{Width: shellBodyMargin, Background: colBg, View: solidView(colBg)},
 					body,
-					{Width: 2, Background: colBg, View: solidView(colBg)},
+					{Width: shellBodyMargin, Background: colBg, View: solidView(colBg)},
 				},
 			},
 
 			// Spacer row between body and footer.
-			{Height: 1, Background: colBg, View: solidView(colBg)},
+			{Height: shellLineHeight, Background: colBg, View: solidView(colBg)},
 
 			// Footer row 1 — screen-specific hint.
-			{Height: 1, Background: colBg, View: screenHintView(screenHint)},
+			{Height: shellLineHeight, Background: colBg, View: screenHintView(screenHint)},
 
 			// Footer row 2 — global hints; always the same.
-			{Height: 1, Background: colPanel, View: globalHintView()},
+			{Height: shellLineHeight, Background: colPanel, View: globalHintView()},
 		},
 	}
 
@@ -116,18 +116,18 @@ func pageShell(subtitle string, active Screen, body *flexgo.Node, screenHint str
 		Dir:        flexgo.Col,
 		Background: colBg,
 		Children: []*flexgo.Node{
-			{Height: 1, Background: colBg, View: solidView(colBg)},
+			{Height: shellFrameSize, Background: colBg, View: solidView(colBg)},
 			{
 				Flex:       1,
 				Dir:        flexgo.Row,
 				Background: colBg,
 				Children: []*flexgo.Node{
-					{Width: 1, Background: colBg, View: solidView(colBg)},
+					{Width: shellFrameSize, Background: colBg, View: solidView(colBg)},
 					chrome,
-					{Width: 1, Background: colBg, View: solidView(colBg)},
+					{Width: shellFrameSize, Background: colBg, View: solidView(colBg)},
 				},
 			},
-			{Height: 1, Background: colBg, View: solidView(colBg)},
+			{Height: shellFrameSize, Background: colBg, View: solidView(colBg)},
 		},
 	}
 }
@@ -251,11 +251,12 @@ type ViewportState struct {
 // to know where "bottom" is; it's passed in because only the screen
 // knows the current allocated height.
 func (v *ViewportState) ScrollBy(delta, contentLines, visibleLines int) {
-	v.Offset += delta
 	maxOffset := contentLines - visibleLines
 	if maxOffset < 0 {
 		maxOffset = 0
 	}
+	v.Offset = max(0, min(v.Offset, maxOffset))
+	v.Offset += delta
 	if v.Offset < 0 {
 		v.Offset = 0
 	}
@@ -280,22 +281,20 @@ func viewportView(state *ViewportState, lines []string) func(w, h int) string {
 		if maxOffset < 0 {
 			maxOffset = 0
 		}
-		if state.Offset > maxOffset {
-			state.Offset = maxOffset
-		}
+		offset := max(0, min(state.Offset, maxOffset))
 		contentW := w - 1 // reserve one column for the scroll indicator
 
 		rendered := make([]string, h)
 		for i := 0; i < h; i++ {
 			src := ""
-			if idx := state.Offset + i; idx >= 0 && idx < len(lines) {
+			if idx := offset + i; idx >= 0 && idx < len(lines) {
 				src = lines[idx]
 			}
 			rendered[i] = padLineBg(src, contentW, colBg, colText)
 		}
 		body := strings.Join(rendered, "\n")
 
-		indicator := scrollIndicator(state.Offset, maxOffset, h)
+		indicator := scrollIndicator(offset, maxOffset, h)
 		return lipgloss.JoinHorizontal(lipgloss.Top, body, indicator)
 	}
 }
