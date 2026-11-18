@@ -89,29 +89,49 @@ func (h HistoryScreen) Body(w, height int) *flexgo.Node {
 
 func (h HistoryScreen) sidebarView() func(int, int) string {
 	return func(w, hgt int) string {
-		rows := []string{
-			headingStyle().Render("RUNS"),
-			"",
+		if w <= 0 || hgt <= 0 {
+			return ""
 		}
-		for i, r := range h.results {
-			line := fmt.Sprintf("  %s  (%d)", r.ID, r.Findings)
-			bg := colPanel
-			fg := colText
-			if i == max(0, min(h.cursor, len(h.results)-1)) {
-				bg = colSelected
-				fg = colHighlight
+
+		padY, padX := 0, 0
+		rows := []string{}
+		if hgt >= 5 {
+			padY = 1
+			rows = append(rows, headingStyle().Render("RUNS"), "")
+		}
+		if w >= 8 {
+			padX = 2
+		}
+		contentW := w - 2*padX
+		visible := hgt - 2*padY - len(rows)
+		cursor := max(0, min(h.cursor, len(h.results)-1))
+		offset := max(0, cursor-visible+1)
+		for i := offset; i < min(offset+visible, len(h.results)); i++ {
+			r := h.results[i]
+			line := fmt.Sprintf("%s  (%d)", r.ID, r.Findings)
+			if padX > 0 {
+				line = "  " + line
 			}
-			rows = append(rows,
-				lipgloss.NewStyle().
-					Background(bg).Foreground(fg).
-					Width(w-4).
-					Render(line))
+			bg, fg := colPanel, colText
+			if i == cursor {
+				bg, fg = colSelected, colHighlight
+			}
+			clipLine := flexgo.ClipView(func(int, int) string { return line })
+			rows = append(rows, lipgloss.NewStyle().
+				Background(bg).Foreground(fg).
+				Width(contentW).
+				Render(clipLine(contentW, 1)))
 		}
+		if len(h.results) == 0 {
+			rows = append(rows, padLineBg("(no history)", contentW, colPanel, colText))
+		}
+		// Heading text can exceed the content area when the sidebar is narrow.
+		clipped := flexgo.ClipView(func(int, int) string { return strings.Join(rows, "\n") })(contentW, hgt-2*padY)
 		return lipgloss.NewStyle().
 			Width(w).Height(hgt).
 			Background(colPanel).
-			Padding(1, 2).
-			Render(strings.Join(rows, "\n"))
+			Padding(padY, padX).
+			Render(clipped)
 	}
 }
 
