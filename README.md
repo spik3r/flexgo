@@ -34,7 +34,8 @@ from its allocated content width, including inside nested layouts. Run
 ellipsis within their allocated column; multiline labels show their first line
 with an ellipsis. Truncated multiline labels close their ANSI style and hyperlink
 state before neighboring content. ANSI styling and wide Unicode labels use
-terminal cell widths.
+terminal cell widths. Tabs expand to four spaces before measuring, so labels
+containing tabs truncate and underline consistently.
 The active panel keeps its allocation as labels grow or the terminal narrows.
 Panel callbacks still need to bound their own output.
 

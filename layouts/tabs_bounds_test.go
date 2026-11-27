@@ -126,3 +126,22 @@ func TestMultilineTabTitlesCloseTerminalFormatting(t *testing.T) {
 		t.Fatalf("single line changed: %q", got)
 	}
 }
+
+func TestTabTitleMeasuresTabsBeforeClippingAndUnderlining(t *testing.T) {
+	root := Tabs(0, []Tab{{Title: "a\tb"}, {Title: "Other"}})
+	leaves := root.Children[0].Children[0].Children
+	for _, tc := range []struct {
+		width     int
+		title     string
+		underline string
+	}{
+		{5, "a   …", "-----"},
+		{8, "a    b", "------"},
+	} {
+		title := strings.TrimSpace(leaves[0].View(tc.width, 1))
+		underline := strings.TrimSpace(leaves[1].View(tc.width, 1))
+		if title != tc.title || underline != tc.underline {
+			t.Errorf("width %d: got title %q, underline %q; want %q, %q", tc.width, title, underline, tc.title, tc.underline)
+		}
+	}
+}
