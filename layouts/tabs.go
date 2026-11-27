@@ -21,6 +21,7 @@ type Tab struct {
 // underline is centered under its title using AlignSelf. Long titles are
 // truncated to their allocated column with an ellipsis. Multiline titles use
 // their first line with an ellipsis; the strip always keeps its two rows.
+// Tabs within a title are expanded to four spaces before measuring.
 //
 // Customize (top 3 overrides):
 //   - root.Children[0].Gap — space between tab titles on the strip.
@@ -82,6 +83,8 @@ func tabHeaderView(text, tail string) func(int, int) string {
 func tabTitle(title string) string {
 	first, _, multiline := strings.Cut(strings.ReplaceAll(title, "\r\n", "\n"), "\n")
 	first, _, carriageReturn := strings.Cut(first, "\r")
+	// Match Lipgloss before measuring underline width or truncating the title.
+	first = strings.ReplaceAll(first, "\t", "    ")
 	if multiline || carriageReturn {
 		first += "…"
 		// The discarded lines may contain the original style/link closers.
